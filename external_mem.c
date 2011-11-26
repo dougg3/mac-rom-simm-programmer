@@ -96,30 +96,30 @@ uint32_t ExternalMem_ReadData(void)
 
 void ExternalMem_AssertCS(void)
 {
-	PORTB |= SIMM_CS;
+	PORTB &= ~SIMM_CS;
 }
 
 void ExternalMem_DeassertCS(void)
 {
-	PORTB &= ~SIMM_CS;
+	PORTB |= SIMM_CS;
 }
 
 void ExternalMem_AssertWE(void)
 {
-	PORTB |= SIMM_WE;
+	PORTB &= ~SIMM_WE;
 }
 
 void ExternalMem_DeassertWE(void)
 {
-	PORTB &= ~SIMM_WE;
+	PORTB |= SIMM_WE;
 }
 
 void ExternalMem_AssertOE(void)
 {
-	PORTB |= SIMM_OE;
+	PORTB &= ~SIMM_OE;
 }
 
 void ExternalMem_DeassertOE(void)
 {
-	PORTB &= ~SIMM_OE;
+	PORTB |= SIMM_OE;
 }
