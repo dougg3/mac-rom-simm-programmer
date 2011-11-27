@@ -48,6 +48,10 @@ static bool MCP23S17_Inited = false;
 #define MCP23S17_OLATA			0x14
 #define MCP23S17_OLATB			0x15
 
+// Private functions
+void MCP23S17_WriteBothRegs(uint8_t addrA, uint16_t value);
+uint16_t MCP23S17_ReadBothRegs(uint8_t addrA);
+
 void MCP23S17_Init()
 {
 	// If it has already been initialized, no need to do it again.
@@ -91,37 +95,29 @@ void MCP23S17_Init()
 
 void MCP23S17_SetDDR(uint16_t ddr)
 {
-	ASSERT_CS();
-
-	// Just a temporary variable so we read
-	// the returned byte from the SPI transfer
-	volatile uint8_t tmp;
-
-	// Start off the communication by telling the MCP23S17 that we are writing to a register
-	SPDR = MCP23S17_CONTROL_WRITE(0);
-	while ((SPSR & (1 << SPIF)) == 0);
-	tmp = SPDR;
-
-	// Tell it which register we're writing to (IODIRA)
-	SPDR = MCP23S17_IODIRA;
-	while ((SPSR & (1 << SPIF)) == 0);
-	tmp = SPDR;
-
-	// Write the first byte of DDR
-	SPDR = (uint8_t)(ddr & 0xFF);
-	while ((SPSR & (1 << SPIF)) == 0);
-	tmp = SPDR;
-
-	// It should auto-increment to IODIRB now
-	SPDR = (uint8_t)((ddr >> 8) & 0xFF);
-	while ((SPSR & (1 << SPIF)) == 0);
-	tmp = SPDR;
-
-	DEASSERT_CS();
+	MCP23S17_WriteBothRegs(MCP23S17_IODIRA, ddr);
 }
 
 void MCP23S17_SetPins(uint16_t data)
 {
+	MCP23S17_WriteBothRegs(MCP23S17_GPIOA, data);
+}
+
+uint16_t MCP23S17_ReadPins(void)
+{
+	return MCP23S17_ReadBothRegs(MCP23S17_GPIOA);
+}
+
+void MCP23S17_SetPullups(uint16_t pullups)
+{
+	MCP23S17_WriteBothRegs(MCP23S17_GPPUA, pullups);
+}
+
+void MCP23S17_WriteBothRegs(uint8_t addrA, uint16_t value)
+{
+	// addrA should contain the address of the "A" register.
+	// the chip should also be in "same bank" mode.
+
 	ASSERT_CS();
 
 	// Just a temporary variable so we read
@@ -133,25 +129,25 @@ void MCP23S17_SetPins(uint16_t data)
 	while ((SPSR & (1 << SPIF)) == 0);
 	tmp = SPDR;
 
-	// Tell it which register we're writing to (GPIOA)
-	SPDR = MCP23S17_GPIOA;
+	// Tell it the first register we're writing to (the "A" register)
+	SPDR = addrA;
 	while ((SPSR & (1 << SPIF)) == 0);
 	tmp = SPDR;
 
-	// Write the first byte of GPIO
-	SPDR = (uint8_t)(data & 0xFF);
+	// Write the first byte of the register
+	SPDR = (uint8_t)(value & 0xFF);
 	while ((SPSR & (1 << SPIF)) == 0);
 	tmp = SPDR;
 
-	// It should auto-increment to GPIOB now
-	SPDR = (uint8_t)((data >> 8) & 0xFF);
+	// It should auto-increment to the "B" register, now write that
+	SPDR = (uint8_t)((value >> 8) & 0xFF);
 	while ((SPSR & (1 << SPIF)) == 0);
 	tmp = SPDR;
 
 	DEASSERT_CS();
 }
 
-uint16_t MCP23S17_ReadPins(void)
+uint16_t MCP23S17_ReadBothRegs(uint8_t addrA)
 {
 	uint16_t returnVal;
 
@@ -166,17 +162,17 @@ uint16_t MCP23S17_ReadPins(void)
 	while ((SPSR & (1 << SPIF)) == 0);
 	tmp = SPDR;
 
-	// Tell it which register we're reading from (GPIOA)
-	SPDR = MCP23S17_GPIOA;
+	// Tell it which register we're reading from (the "A" register)
+	SPDR = addrA;
 	while ((SPSR & (1 << SPIF)) == 0);
 	tmp = SPDR;
 
-	// Read the first byte of GPIOA
+	// Read the first byte of the register
 	SPDR = 0;
 	while ((SPSR & (1 << SPIF)) == 0);
 	returnVal = SPDR;
 
-	// It should auto-increment to IODIRB now
+	// It should auto-increment to the "B" register, now read that
 	SPDR = 0;
 	while ((SPSR & (1 << SPIF)) == 0);
 	returnVal |= (((uint16_t)SPDR) << 8);

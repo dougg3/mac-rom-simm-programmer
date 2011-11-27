@@ -14,5 +14,6 @@ void MCP23S17_Init();
 void MCP23S17_SetDDR(uint16_t ddr);
 void MCP23S17_SetPins(uint16_t data);
 uint16_t MCP23S17_ReadPins(void);
+void MCP23S17_SetPullups(uint16_t pullups);
 
 #endif /* MCP23S17_H_ */
