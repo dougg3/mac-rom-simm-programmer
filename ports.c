@@ -1,0 +1,338 @@
+/*
+ * ports.c
+ *
+ *  Created on: Nov 26, 2011
+ *      Author: Doug
+ */
+
+#include "ports.h"
+#include "mcp23s17.h"
+#include <avr/io.h>
+
+// SIMM control signals on port B
+#define SIMM_WE		(1 << 6)
+#define SIMM_OE		(1 << 5)
+#define SIMM_CS		(1 << 4)
+
+void Ports_Init(void)
+{
+	// This module depends on the MPC23S17
+	MCP23S17_Init();
+}
+
+void Ports_SetAddressOut(uint32_t data)
+{
+	// NOTE: If any of PORTA or PORTC or PORTD pins 0, 1, 4, 5, or 6 are set as
+	// inputs, this function might mess with their pull-up resistors.
+	// Only use it under normal operation when all the address pins are being
+	// used as outputs
+
+	PORTA = (data & 0xFF); // A0-A7
+	PORTC = ((data >> 8) & 0xFF); // A8-A15
+
+	// A16-A20 are special because they are split up...(We use PORTD pins 0, 1, 4, 5, 6)
+	uint8_t tmp = (data >> 16) & 0xFF;
+	tmp = (tmp & 0x03) | ((tmp & 0x1C) << 2);
+
+	// Now, turn off the pins we have to turn off, and turn on the pins we have to turn on
+	// (without affecting other pins [2, 3, and 7] that we aren't supposed to touch)
+	PORTD &= (0x8C | tmp); // This should turn off all '0' bits in tmp.
+	PORTD |= tmp; // This should turn on all '1' bits in tmp
+}
+
+void Ports_AddressOut_RMW(uint32_t data, uint32_t modifyMask)
+{
+	uint32_t modifiedDataOn = data & modifyMask;
+	uint32_t modifiedDataOff = data | ~modifyMask;
+
+	// Turn on/off requested bits in the PORT register.
+	PORTA |= ((modifiedDataOn >> 0) & 0xFF);
+	PORTA &= ((modifiedDataOff >> 0) & 0xFF);
+	PORTC |= ((modifiedDataOn >> 8) & 0xFF);
+	PORTC &= ((modifiedDataOff >> 8) & 0xFF);
+
+	// A16-A20 are special because they are split up...(We use PORTD pins 0, 1, 4, 5, 6)
+	uint8_t tmp = (modifiedDataOn >> 16) & 0xFF;
+	tmp = (tmp & 0x03) | ((tmp & 0x1C) << 2);
+
+	PORTD |= tmp;
+	PORTD &= (0x8C | tmp);
+}
+
+void Ports_SetDataOut(uint32_t data)
+{
+	// NOTE: If any pins of PORTE or PORTF are set as inputs, this
+	// function might mess with their pull-up resistors.
+	// Only use it under normal operation when all the address pins are being
+	// used as outputs
+
+	// Set the actual outputted values
+	MCP23S17_SetPins(data & 0xFFFF); // D0-D15
+	PORTE = ((data >> 16) & 0xFF); // D16-D23
+	PORTF = ((data >> 24) & 0xFF); // D24-D31
+}
+
+void Ports_DataOut_RMW(uint32_t data, uint32_t modifyMask)
+{
+	uint32_t modifiedDataOn = data & modifyMask;
+	uint32_t modifiedDataOff = data | ~modifyMask;
+
+	// Read what's in it first...
+	uint16_t outputLatches = MCP23S17_GetOutputs();
+	outputLatches |= (modifiedDataOn) & 0xFFFF;
+	outputLatches &= modifiedDataOff & 0xFFFF;
+	MCP23S17_SetPins(outputLatches);
+
+	// Turn on/off requested bits in the PORT register.
+	PORTE |= ((modifiedDataOn >> 16) & 0xFF);
+	PORTE &= ((modifiedDataOff >> 16) & 0xFF);
+	PORTF |= ((modifiedDataOn >> 24) & 0xFF);
+	PORTF &= ((modifiedDataOff >> 24) & 0xFF);
+}
+
+void Ports_SetCSOut(bool data)
+{
+	if (data)
+	{
+		PORTB |= SIMM_CS;
+	}
+	else
+	{
+		PORTB &= ~SIMM_CS;
+	}
+}
+
+void Ports_SetOEOut(bool data)
+{
+	if (data)
+	{
+		PORTB |= SIMM_OE;
+	}
+	else
+	{
+		PORTB &= ~SIMM_OE;
+	}
+}
+
+void Ports_SetWEOut(bool data)
+{
+	if (data)
+	{
+		PORTB |= SIMM_WE;
+	}
+	else
+	{
+		PORTB &= ~SIMM_WE;
+	}
+}
+
+void Ports_SetAddressDDR(uint32_t ddr)
+{
+	PORTA = (ddr & 0xFF); // A0-A7
+	PORTC = ((ddr >> 8) & 0xFF); // A8-A15
+
+	// A16-A20 are special because they are split up...(We use PORTD pins 0, 1, 4, 5, 6)
+	uint8_t tmp = (ddr >> 16) & 0xFF;
+	tmp = (tmp & 0x03) | ((tmp & 0x1C) << 2);
+
+	// Now, turn off the DDR bits we have to turn off,
+	// and turn on the DDR bits we have to turn on
+	// (without affecting other bits [2, 3, and 7]
+	// that we aren't supposed to touch)
+	DDRD &= (0x8C | tmp); // This should turn off all '0' bits in tmp.
+	DDRD |= tmp; // This should turn on all '1' bits in tmp
+}
+
+void Ports_AddressDDR_RMW(uint32_t ddr, uint32_t modifyMask)
+{
+	uint32_t modifiedDataOn = ddr & modifyMask;
+	uint32_t modifiedDataOff = ddr | ~modifyMask;
+
+	// Turn on/off requested bits in the DDR register.
+	DDRA |= ((modifiedDataOn >> 0) & 0xFF);
+	DDRA &= ((modifiedDataOff >> 0) & 0xFF);
+	DDRC |= ((modifiedDataOn >> 8) & 0xFF);
+	DDRC &= ((modifiedDataOff >> 8) & 0xFF);
+
+	// A16-A20 are special because they are split up...(We use PORTD pins 0, 1, 4, 5, 6)
+	uint8_t tmp = (modifiedDataOn >> 16) & 0xFF;
+	tmp = (tmp & 0x03) | ((tmp & 0x1C) << 2);
+
+	DDRD |= tmp;
+	DDRD &= (0x8C | tmp);
+}
+
+void Ports_SetDataDDR(uint32_t ddr)
+{
+	MCP23S17_SetDDR(ddr & 0xFFFF); // D0-D15
+	DDRE = ((ddr >> 16) & 0xFF); // D16-D23
+	DDRF = ((ddr >> 24) & 0xFF); // D24-D31
+}
+
+void Ports_DataDDR_RMW(uint32_t ddr, uint32_t modifyMask)
+{
+	uint32_t modifiedDataOn = ddr & modifyMask;
+	uint32_t modifiedDataOff = ddr | ~modifyMask;
+
+	// If we can get away with it, don't bother reading back...
+	if ((modifyMask & 0xFFFF) == 0xFFFF)
+	{
+		MCP23S17_SetDDR(modifiedDataOn & 0xFFFF);
+	}
+	else // Otherwise, we have to read what's in it first...(unless I decide to keep a local cached copy)
+	{
+		uint16_t outputLatches = MCP23S17_GetDDR();
+		outputLatches |= (modifiedDataOn) & 0xFFFF;
+		outputLatches &= modifiedDataOff & 0xFFFF;
+		MCP23S17_SetDDR(outputLatches);
+	}
+
+	// Turn on/off requested bits in the DDR register.
+	DDRE |= ((modifiedDataOn >> 16) & 0xFF);
+	DDRE &= ((modifiedDataOff >> 16) & 0xFF);
+	DDRF |= ((modifiedDataOn >> 24) & 0xFF);
+	DDRF &= ((modifiedDataOff >> 24) & 0xFF);
+}
+
+void Ports_SetCSDDR(bool ddr)
+{
+	if (ddr)
+	{
+		DDRB |= SIMM_CS;
+	}
+	else
+	{
+		DDRB &= ~SIMM_CS;
+	}
+}
+
+void Ports_SetOEDDR(bool ddr)
+{
+	if (ddr)
+	{
+		DDRB |= SIMM_OE;
+	}
+	else
+	{
+		DDRB &= ~SIMM_OE;
+	}
+}
+
+void Ports_SetWEDDR(bool ddr)
+{
+	if (ddr)
+	{
+		DDRB |= SIMM_WE;
+	}
+	else
+	{
+		DDRB &= ~SIMM_WE;
+	}
+}
+
+void Ports_AddressPullups_RMW(uint32_t pullups, uint32_t modifyMask)
+{
+	// Pull-ups are set by writing to the data register when in input mode.
+	// MAKE SURE THE PINS ARE SET AS INPUTS FIRST!
+	Ports_AddressOut_RMW(pullups, modifyMask);
+}
+
+void Ports_DataPullups_RMW(uint32_t pullups, uint32_t modifyMask)
+{
+	// Pull-ups here are a little more tricky because the MCP23S17 has
+	// separate registers for pull-up enable.
+	uint32_t modifiedDataOn = pullups & modifyMask;
+	uint32_t modifiedDataOff = pullups | ~modifyMask;
+
+	// If we can get away with it, don't bother reading back...
+	if ((modifyMask & 0xFFFF) == 0xFFFF)
+	{
+		MCP23S17_SetPullups(modifiedDataOn & 0xFFFF);
+	}
+	else // Otherwise, we have to read what's in it first...(unless I decide to keep a local cached copy)
+	{
+		uint16_t outputLatches = MCP23S17_GetPullups();
+		outputLatches |= (modifiedDataOn) & 0xFFFF;
+		outputLatches &= modifiedDataOff & 0xFFFF;
+		MCP23S17_SetPullups(outputLatches);
+	}
+
+	// Turn on/off requested bits in the PORT register for the other 16 bits.
+	PORTE |= ((modifiedDataOn >> 16) & 0xFF);
+	PORTE &= ((modifiedDataOff >> 16) & 0xFF);
+	PORTF |= ((modifiedDataOn >> 24) & 0xFF);
+	PORTF &= ((modifiedDataOff >> 24) & 0xFF);
+}
+
+void Ports_SetCSPullup(bool pullup)
+{
+	if (pullup)
+	{
+		PORTB |= SIMM_CS;
+	}
+	else
+	{
+		PORTB &= ~SIMM_CS;
+	}
+}
+
+void Ports_SetOEPullup(bool pullup)
+{
+	if (pullup)
+	{
+		PORTB |= SIMM_OE;
+	}
+	else
+	{
+		PORTB &= ~SIMM_OE;
+	}
+}
+
+void Ports_SetWEPullup(bool pullup)
+{
+	if (pullup)
+	{
+		PORTB |= SIMM_WE;
+	}
+	else
+	{
+		PORTB &= ~SIMM_WE;
+	}
+}
+
+
+uint32_t Ports_ReadAddress(void)
+{
+	uint32_t result = PINA;
+	result |= (((uint32_t)PINC) << 8);
+	uint8_t tmp = (PIND & 0x03) | ((PIND & 0x70) >> 2);
+	result |= (((uint32_t)tmp) << 16);
+
+	return result;
+}
+
+uint32_t Ports_ReadData(void)
+{
+	uint32_t result = (uint32_t)MCP23S17_ReadPins();
+
+	// Turn on/off requested bits in the PORT register.
+	result |= (((uint32_t)PINE) << 16);
+	result |= (((uint32_t)PINF) << 24);
+
+	return result;
+}
+
+bool Ports_ReadCSInData(void)
+{
+	return (PINB & SIMM_CS) != 0;
+}
+
+bool Ports_ReadOEInData(void)
+{
+	return (PINB & SIMM_OE) != 0;
+}
+
+bool Ports_ReadWEInData(void)
+{
+	return (PINB & SIMM_WE) != 0;
+}

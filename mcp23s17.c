@@ -113,6 +113,22 @@ void MCP23S17_SetPullups(uint16_t pullups)
 	MCP23S17_WriteBothRegs(MCP23S17_GPPUA, pullups);
 }
 
+// Determines the output values of output pins without reading any input pins
+uint16_t MCP23S17_GetOutputs(void)
+{
+	return MCP23S17_ReadBothRegs(MCP23S17_OLATA);
+}
+
+uint16_t MCP23S17_GetDDR(void)
+{
+	return MCP23S17_ReadBothRegs(MCP23S17_IODIRA);
+}
+
+uint16_t MCP23S17_GetPullups(void)
+{
+	return MCP23S17_ReadBothRegs(MCP23S17_GPPUA);
+}
+
 void MCP23S17_WriteBothRegs(uint8_t addrA, uint16_t value)
 {
 	// addrA should contain the address of the "A" register.
