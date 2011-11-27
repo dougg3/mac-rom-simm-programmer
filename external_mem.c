@@ -9,7 +9,7 @@
 #include "ports.h"
 #include <avr/io.h>
 
-#define NUM_ADDRESS_LINES	20
+#define HIGHEST_ADDRESS_LINE	20
 
 // Allow this to be initialized more than once.
 // In case we mess with the port settings,
@@ -22,11 +22,11 @@ void ExternalMem_Init(void)
 
 	// Disable all pull-ups, on both the address and data lines. They aren't needed
 	// for normal operation.
-	Ports_AddressPullups_RMW(0, (1UL << (NUM_ADDRESS_LINES - 1)) - 1);
+	Ports_AddressPullups_RMW(0, (1UL << (HIGHEST_ADDRESS_LINE + 1)) - 1);
 	Ports_DataPullups_RMW(0, 0xFFFFFFFFUL);
 
 	// Configure all address lines as outputs
-	Ports_SetAddressDDR((1UL << (NUM_ADDRESS_LINES - 1)) - 1);
+	Ports_SetAddressDDR((1UL << (HIGHEST_ADDRESS_LINE - 1)) - 1);
 
 	// Sensible defaults for address and data lines:
 	// Write out address zero
