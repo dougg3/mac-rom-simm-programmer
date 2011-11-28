@@ -35,7 +35,7 @@ void ExternalMem_Init(void)
 	// Set all data lines as inputs (with no pullups! we turned them off)
 	Ports_SetDataDDR(0);
 
-	// Control lines (I'm cheating and manipulating the bits directly here)
+	// Control lines
 	Ports_SetCSDDR(1);
 	Ports_SetOEDDR(1);
 	Ports_SetWEDDR(1);
