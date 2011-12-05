@@ -38,8 +38,14 @@ int SIMMElectricalTest_Run(void)
 	// Then read the values back and check for any zeros. This would indicate a short to ground.
 	Ports_SetAddressDDR(0);
 	Ports_SetDataDDR(0);
+	Ports_SetCSDDR(false);
+	Ports_SetOEDDR(false);
+	Ports_SetWEDDR(false);
 	Ports_AddressPullups_RMW(SIMM_ADDRESS_PINS_MASK, SIMM_ADDRESS_PINS_MASK);
 	Ports_DataPullups_RMW(SIMM_DATA_PINS_MASK, SIMM_DATA_PINS_MASK);
+	Ports_SetCSPullup(true);
+	Ports_SetOEPullup(true);
+	Ports_SetWEPullup(true);
 
 	DelayMS(DELAY_SETTLE_TIME_MS);
 
@@ -50,6 +56,24 @@ int SIMMElectricalTest_Run(void)
 	}
 
 	if (Ports_ReadData() != SIMM_DATA_PINS_MASK)
+	{
+		// TODO: Log all these errors somewhere?
+		numErrors++;
+	}
+
+	if (!Ports_ReadCS())
+	{
+		// TODO: Log all these errors somewhere?
+		numErrors++;
+	}
+
+	if (!Ports_ReadOE())
+	{
+		// TODO: Log all these errors somewhere?
+		numErrors++;
+	}
+
+	if (!Ports_ReadWE())
 	{
 		// TODO: Log all these errors somewhere?
 		numErrors++;
