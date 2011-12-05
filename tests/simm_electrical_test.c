@@ -7,12 +7,15 @@
 
 #include "simm_electrical_test.h"
 #include "../ports.h"
+#include "../delay.h"
 
 #define SIMM_HIGHEST_ADDRESS_LINE	18
 #define SIMM_ADDRESS_PINS_MASK		((1UL << (SIMM_HIGHEST_ADDRESS_LINE + 1)) - 1)
 
 #define SIMM_HIGHEST_DATA_LINE		31
 #define SIMM_DATA_PINS_MASK			(0xFFFFFFFFUL)
+
+#define DELAY_SETTLE_TIME_MS		5
 
 typedef enum ElectricalTestStage
 {
@@ -38,7 +41,7 @@ int SIMMElectricalTest_Run(void)
 	Ports_AddressPullups_RMW(SIMM_ADDRESS_PINS_MASK, SIMM_ADDRESS_PINS_MASK);
 	Ports_DataPullups_RMW(SIMM_DATA_PINS_MASK, SIMM_DATA_PINS_MASK);
 
-	// TODO: Wait a sec?
+	DelayMS(DELAY_SETTLE_TIME_MS);
 
 	if (Ports_ReadAddress() != SIMM_ADDRESS_PINS_MASK)
 	{
@@ -127,7 +130,8 @@ int SIMMElectricalTest_Run(void)
 		// OK, so now we have set up all lines as needed. Exactly one pin is outputting a 0, and all other pins
 		// are inputs with pull-ups enabled. Read back all the lines, and if any pin reads back as 0,
 		// it means that pin is shorted to the pin we are testing (overpowering its pullup)
-		// TODO: Wait a bit here for things to settle?
+
+		DelayMS(DELAY_SETTLE_TIME_MS);
 
 		uint32_t readback = Ports_ReadAddress();
 		if (curStage == TestingAddressLines)
