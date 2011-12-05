@@ -322,17 +322,17 @@ uint32_t Ports_ReadData(void)
 	return result;
 }
 
-bool Ports_ReadCSInData(void)
+bool Ports_ReadCS(void)
 {
 	return (PINB & SIMM_CS) != 0;
 }
 
-bool Ports_ReadOEInData(void)
+bool Ports_ReadOE(void)
 {
 	return (PINB & SIMM_OE) != 0;
 }
 
-bool Ports_ReadWEInData(void)
+bool Ports_ReadWE(void)
 {
 	return (PINB & SIMM_WE) != 0;
 }
