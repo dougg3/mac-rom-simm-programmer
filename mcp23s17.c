@@ -98,6 +98,13 @@ void MCP23S17_Init()
 
 void MCP23S17_SetDDR(uint16_t ddr)
 {
+	// The MCP23S17's DDR is backwards from the AVR's.
+	// I like dealing with it so it behaves like the AVR's,
+	// so I invert any DDR values in this driver.
+	// In other words, when you set or get the DDR through
+	// this driver, the 1s and 0s are backwards from what
+	// the MCP23S17's datasheet says, but they are
+	// consistent with the AVR. I value the consistency more.
 	MCP23S17_WriteBothRegs(MCP23S17_IODIRA, ~ddr);
 }
 
@@ -124,6 +131,9 @@ uint16_t MCP23S17_GetOutputs(void)
 
 uint16_t MCP23S17_GetDDR(void)
 {
+	// As I mentioned above, DDR bits are inverted from
+	// what the MCP23S17's datasheet says, but
+	// consistent with what the AVR's datasheet says
 	return ~MCP23S17_ReadBothRegs(MCP23S17_IODIRA);
 }
 
