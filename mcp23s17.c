@@ -98,7 +98,7 @@ void MCP23S17_Init()
 
 void MCP23S17_SetDDR(uint16_t ddr)
 {
-	MCP23S17_WriteBothRegs(MCP23S17_IODIRA, ddr);
+	MCP23S17_WriteBothRegs(MCP23S17_IODIRA, ~ddr);
 }
 
 void MCP23S17_SetPins(uint16_t data)
@@ -124,7 +124,7 @@ uint16_t MCP23S17_GetOutputs(void)
 
 uint16_t MCP23S17_GetDDR(void)
 {
-	return MCP23S17_ReadBothRegs(MCP23S17_IODIRA);
+	return ~MCP23S17_ReadBothRegs(MCP23S17_IODIRA);
 }
 
 uint16_t MCP23S17_GetPullups(void)
