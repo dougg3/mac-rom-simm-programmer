@@ -8,5 +8,6 @@
 #ifndef SIMM_ELECTRICAL_TEST_H_
 #define SIMM_ELECTRICAL_TEST_H_
 
+int SIMMElectricalTest_Run(void);
 
 #endif /* SIMM_ELECTRICAL_TEST_H_ */

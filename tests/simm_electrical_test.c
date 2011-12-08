@@ -9,13 +9,13 @@
 #include "../ports.h"
 #include "../delay.h"
 
-#define SIMM_HIGHEST_ADDRESS_LINE	18
+#define SIMM_HIGHEST_ADDRESS_LINE	20
 #define SIMM_ADDRESS_PINS_MASK		((1UL << (SIMM_HIGHEST_ADDRESS_LINE + 1)) - 1)
 
 #define SIMM_HIGHEST_DATA_LINE		31
 #define SIMM_DATA_PINS_MASK			(0xFFFFFFFFUL)
 
-#define DELAY_SETTLE_TIME_MS		5
+#define DELAY_SETTLE_TIME_MS		20
 
 typedef enum ElectricalTestStage
 {
@@ -33,6 +33,8 @@ int SIMMElectricalTest_Run(void)
 	int numErrors = 0;
 
 	Ports_Init();
+
+	DelayMS(DELAY_SETTLE_TIME_MS);
 
 	// First check for anything shorted to ground. Set all lines as inputs with a weak pull-up resistor.
 	// Then read the values back and check for any zeros. This would indicate a short to ground.

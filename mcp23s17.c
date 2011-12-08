@@ -7,6 +7,7 @@
 
 #include "mcp23s17.h"
 #include <avr/io.h>
+#include <util/delay.h>
 #include <stdbool.h>
 
 static bool MCP23S17_Inited = false;
@@ -88,6 +89,8 @@ void MCP23S17_Init()
 	// Pull the MCP23S17 out of reset (it's pulled down to GND on the board with a 100k pulldown
 	// so it won't activate during AVR ISP programming)
 	PORTB |= MCP23S17_RESET;
+
+	_delay_ms(50);
 
 	// All done!
 	MCP23S17_Inited = true;
