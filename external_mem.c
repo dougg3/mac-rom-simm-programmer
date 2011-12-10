@@ -97,6 +97,11 @@ void ExternalMem_AssertOE(void)
 	Ports_SetOEOut(0);
 }
 
+void ExternalMem_DeassertOE(void)
+{
+	Ports_SetOEOut(1);
+}
+
 void ExternalMem_Read(uint32_t startAddress, uint32_t *buf, uint32_t len)
 {
 	ExternalMem_AssertCS();
@@ -108,11 +113,14 @@ void ExternalMem_Read(uint32_t startAddress, uint32_t *buf, uint32_t len)
 		// Shouldn't need to wait here. Each clock cycle at 16 MHz is 62.5 nanoseconds, so by the time the SPI
 		// read has been signaled with the SPI chip, there will DEFINITELY be good data on the data bus.
 		// (Considering these chips will be in the 70 ns or 140 ns range, that's only a few clock cycles at most)
-		*buf++ = ExternalMem_ReadData();
-	}
-}
 
-void ExternalMem_DeassertOE(void)
-{
-	Ports_SetOEOut(1);
+		// TODO: Change the read data routines to put them in the correct order as is so I don't have to do this
+		// (Might shave a second or so off the read time)
+		uint32_t tmp = ExternalMem_ReadData();
+		tmp = (tmp & 0xFF) << 24 |
+			  ((tmp >> 8) & 0xFF) << 16 |
+			  ((tmp >> 16) & 0xFF) << 8 |
+			  ((tmp >> 24) & 0xFF) << 0;
+		*buf++ = tmp;
+	}
 }

@@ -41,4 +41,7 @@ void ExternalMem_DeassertWE(void);
 void ExternalMem_AssertOE(void);
 void ExternalMem_DeassertOE(void);
 
+// Reads a set of data...
+void ExternalMem_Read(uint32_t startAddress, uint32_t *buf, uint32_t len);
+
 #endif /* EXTERNAL_MEM_H_ */

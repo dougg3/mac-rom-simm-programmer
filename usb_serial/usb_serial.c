@@ -43,9 +43,10 @@ void USBSerial_Check(void)
 		if (CDC_Device_BytesReceived(&VirtualSerial_CDC_Interface))
 		{
 			CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
+			//CDC_Device_SendString(&VirtualSerial_CDC_Interface, "Reading...");
+			//CDC_Device_Flush(&VirtualSerial_CDC_Interface);
 
-
-			uint32_t mem = ExternalMem_ReadData();
+			/*uint32_t mem = ExternalMem_ReadData();
 
 			char dataString[11];
 
@@ -63,7 +64,39 @@ void USBSerial_Check(void)
 
 			sprintf(dataString, "%02X %02X %02X\r\n", DDRA, DDRC, DDRD);
 
-			CDC_Device_SendString(&VirtualSerial_CDC_Interface, dataString);
+			CDC_Device_SendString(&VirtualSerial_CDC_Interface, dataString);*/
+
+#define BUFSIZE 128UL
+			static uint32_t readBuf[BUFSIZE];
+			int x;
+			for (x = 0; x < 512UL * 1024UL / BUFSIZE; x++)
+			{
+				ExternalMem_Read(x*BUFSIZE, readBuf, BUFSIZE);
+
+				if (CDC_Device_SendData(&VirtualSerial_CDC_Interface, (const char *)readBuf, BUFSIZE*4) != ENDPOINT_RWSTREAM_NoError)
+				{
+					PORTD |= (1 << 7);
+				}
+
+				//int y;
+				//for (y = 0; y < BUFSIZE; y++)
+				//{
+					//if ((y % 4) == 0) CDC_Device_SendString(&VirtualSerial_CDC_Interface, ".\r\n");
+
+					//char tmpBuf[20];
+					//sprintf(tmpBuf, "%02X %02X %02X %02X ",
+					//		(uint8_t)(readBuf[y] >> 24),
+					//		(uint8_t)(readBuf[y] >> 16),
+					//		(uint8_t)(readBuf[y] >> 8),
+					//		(uint8_t)(readBuf[y] >> 0));
+					//CDC_Device_SendString(&VirtualSerial_CDC_Interface, tmpBuf);
+				//}
+				//if ((x % 64) == 0) CDC_Device_SendString(&VirtualSerial_CDC_Interface, "\r\n");
+				//CDC_Device_SendString(&VirtualSerial_CDC_Interface, ".");
+				//CDC_Device_Flush(&VirtualSerial_CDC_Interface);
+			}
+
+			//CDC_Device_SendString(&VirtualSerial_CDC_Interface, "\r\nDone\r\n");
 		}
 
 		/*int16_t rb = CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
