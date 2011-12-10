@@ -8,6 +8,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
+#include "external_mem.h"
 #include "tests/simm_electrical_test.h"
 #include "usb_serial/usb_serial.h"
 
@@ -18,6 +19,10 @@ int main(void)
 	DDRD |= (1 << 7);
 	PORTD &= ~(1 << 7);
 
+	ExternalMem_Init();
+	ExternalMem_SetAddress(0);
+	ExternalMem_AssertCS();
+	ExternalMem_AssertOE();
 	USBSerial_Init();
 	sei();
 
