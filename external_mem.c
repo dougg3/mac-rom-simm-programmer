@@ -21,7 +21,7 @@ void ExternalMem_Init(void)
 	Ports_Init();
 
 	// Configure all address lines as outputs
-	Ports_SetAddressDDR((1UL << (HIGHEST_ADDRESS_LINE - 1)) - 1);
+	Ports_SetAddressDDR((1UL << (HIGHEST_ADDRESS_LINE + 1)) - 1);
 
 	// Set all data lines as inputs
 	Ports_SetDataDDR(0);
@@ -95,6 +95,21 @@ void ExternalMem_DeassertWE(void)
 void ExternalMem_AssertOE(void)
 {
 	Ports_SetOEOut(0);
+}
+
+void ExternalMem_Read(uint32_t startAddress, uint32_t *buf, uint32_t len)
+{
+	ExternalMem_AssertCS();
+	ExternalMem_AssertOE();
+
+	while (len--)
+	{
+		ExternalMem_SetAddress(startAddress++);
+		// Shouldn't need to wait here. Each clock cycle at 16 MHz is 62.5 nanoseconds, so by the time the SPI
+		// read has been signaled with the SPI chip, there will DEFINITELY be good data on the data bus.
+		// (Considering these chips will be in the 70 ns or 140 ns range, that's only a few clock cycles at most)
+		*buf++ = ExternalMem_ReadData();
+	}
 }
 
 void ExternalMem_DeassertOE(void)

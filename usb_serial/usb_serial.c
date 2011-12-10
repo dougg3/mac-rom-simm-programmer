@@ -44,15 +44,24 @@ void USBSerial_Check(void)
 		{
 			CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
 
+
 			uint32_t mem = ExternalMem_ReadData();
 
 			char dataString[11];
 
+			sprintf(dataString, "%08lX\r\n", mem);
+
+			CDC_Device_SendString(&VirtualSerial_CDC_Interface, dataString);
+
 			sprintf(dataString, "%02X%02X%02X%02X\r\n",
-					(mem>>24) & 0xFF,
-					(mem>>16) & 0xFF,
-					(mem>>8) & 0xFF,
-					(mem>>0) & 0xFF);
+					(uint8_t)(mem>>24),
+					(uint8_t)(mem>>16),
+					(uint8_t)(mem>>8),
+					(uint8_t)(mem>>0));
+
+			CDC_Device_SendString(&VirtualSerial_CDC_Interface, dataString);
+
+			sprintf(dataString, "%02X %02X %02X\r\n", DDRA, DDRC, DDRD);
 
 			CDC_Device_SendString(&VirtualSerial_CDC_Interface, dataString);
 		}

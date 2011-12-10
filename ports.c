@@ -128,8 +128,8 @@ void Ports_SetWEOut(bool data)
 
 void Ports_SetAddressDDR(uint32_t ddr)
 {
-	PORTA = (ddr & 0xFF); // A0-A7
-	PORTC = ((ddr >> 8) & 0xFF); // A8-A15
+	DDRA = (ddr & 0xFF); // A0-A7
+	DDRC = ((ddr >> 8) & 0xFF); // A8-A15
 
 	// A16-A20 are special because they are split up...(We use PORTD pins 0, 1, 4, 5, 6)
 	uint8_t tmp = (ddr >> 16) & 0xFF;
@@ -315,7 +315,7 @@ uint32_t Ports_ReadData(void)
 {
 	uint32_t result = (uint32_t)MCP23S17_ReadPins();
 
-	// Turn on/off requested bits in the PORT register.
+	// Grab the other two bytes...
 	result |= (((uint32_t)PINE) << 16);
 	result |= (((uint32_t)PINF) << 24);
 
