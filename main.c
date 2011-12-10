@@ -6,15 +6,27 @@
  */
 
 #include <avr/io.h>
+#include <avr/interrupt.h>
 #include <util/delay.h>
 #include "tests/simm_electrical_test.h"
+#include "usb_serial/usb_serial.h"
 
 int main(void)
 {
+	cli();
+
 	DDRD |= (1 << 7);
 	PORTD &= ~(1 << 7);
 
-	int result = SIMMElectricalTest_Run();
+	USBSerial_Init();
+	sei();
+
+	while (1)
+	{
+		USBSerial_Check();
+	}
+
+	/*int result = SIMMElectricalTest_Run();
 
 	if (result == 0)
 	{
@@ -49,7 +61,7 @@ int main(void)
 
 			_delay_ms(5000);
 		}
-	}
+	}*/
 
 	return 0;
 }

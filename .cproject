@@ -32,6 +32,18 @@
 							<tool id="de.innot.avreclipse.tool.compiler.winavr.app.debug.1123922496" name="AVR Compiler" superClass="de.innot.avreclipse.tool.compiler.winavr.app.debug">
 								<option id="de.innot.avreclipse.compiler.option.debug.level.1719005254" name="Generate Debugging Info" superClass="de.innot.avreclipse.compiler.option.debug.level"/>
 								<option id="de.innot.avreclipse.compiler.option.optimize.1096379855" name="Optimization Level" superClass="de.innot.avreclipse.compiler.option.optimize"/>
+								<option id="de.innot.avreclipse.compiler.option.def.212979603" name="Define Syms (-D)" superClass="de.innot.avreclipse.compiler.option.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="USB_DEVICE_ONLY"/>
+									<listOptionValue builtIn="false" value="F_USB=16000000"/>
+									<listOptionValue builtIn="false" value="DEVICE_STATE_AS_GPIOR=0"/>
+									<listOptionValue builtIn="false" value="ORDERED_EP_CONFIG"/>
+									<listOptionValue builtIn="false" value="FIXED_CONTROL_ENDPOINT_SIZE=8"/>
+									<listOptionValue builtIn="false" value="FIXED_NUM_CONFIGURATIONS=1"/>
+									<listOptionValue builtIn="false" value="USE_FLASH_DESCRIPTORS"/>
+									<listOptionValue builtIn="false" value="USE_STATIC_OPTIONS=&quot;(USB_DEVICE_OPT_FULLSPEED | USB_OPT_REG_ENABLED | USB_OPT_AUTO_PLL)&quot;"/>
+									<listOptionValue builtIn="false" value="INTERRUPT_CONTROL_ENDPOINT"/>
+								</option>
+								<option id="de.innot.avreclipse.compiler.option.otherflags.1513967861" superClass="de.innot.avreclipse.compiler.option.otherflags" value="-ffunction-sections -fdata-sections" valueType="string"/>
 								<inputType id="de.innot.avreclipse.compiler.winavr.input.1367172122" name="C Source Files" superClass="de.innot.avreclipse.compiler.winavr.input"/>
 							</tool>
 							<tool id="de.innot.avreclipse.tool.cppcompiler.app.debug.24092953" name="AVR C++ Compiler" superClass="de.innot.avreclipse.tool.cppcompiler.app.debug">
@@ -39,6 +51,7 @@
 								<option id="de.innot.avreclipse.cppcompiler.option.optimize.1022518531" name="Optimization Level" superClass="de.innot.avreclipse.cppcompiler.option.optimize"/>
 							</tool>
 							<tool id="de.innot.avreclipse.tool.linker.winavr.app.debug.806884166" name="AVR C Linker" superClass="de.innot.avreclipse.tool.linker.winavr.app.debug">
+								<option id="de.innot.avreclipse.linker.option.otherlinkargs.1714687929" superClass="de.innot.avreclipse.linker.option.otherlinkargs" value="-Wl,--relax,--gc-sections" valueType="string"/>
 								<inputType id="de.innot.avreclipse.tool.linker.input.1020880987" name="OBJ Files" superClass="de.innot.avreclipse.tool.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -369,6 +382,8 @@
 				</scannerConfigBuildInfo>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+			<storageModule moduleId="org.eclipse.cdt.core.language.mapping"/>
+			<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 		</cconfiguration>
 		<cconfiguration id="de.innot.avreclipse.configuration.app.release.1163010375">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="de.innot.avreclipse.configuration.app.release.1163010375" moduleId="org.eclipse.cdt.core.settings" name="Release">
@@ -399,6 +414,18 @@
 							<tool id="de.innot.avreclipse.tool.compiler.winavr.app.release.883804772" name="AVR Compiler" superClass="de.innot.avreclipse.tool.compiler.winavr.app.release">
 								<option id="de.innot.avreclipse.compiler.option.debug.level.369847490" name="Generate Debugging Info" superClass="de.innot.avreclipse.compiler.option.debug.level" value="de.innot.avreclipse.compiler.option.debug.level.none" valueType="enumerated"/>
 								<option id="de.innot.avreclipse.compiler.option.optimize.471434010" name="Optimization Level" superClass="de.innot.avreclipse.compiler.option.optimize" value="de.innot.avreclipse.compiler.optimize.size" valueType="enumerated"/>
+								<option id="de.innot.avreclipse.compiler.option.def.1514251723" name="Define Syms (-D)" superClass="de.innot.avreclipse.compiler.option.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="USB_DEVICE_ONLY"/>
+									<listOptionValue builtIn="false" value="F_USB=16000000"/>
+									<listOptionValue builtIn="false" value="DEVICE_STATE_AS_GPIOR=0"/>
+									<listOptionValue builtIn="false" value="ORDERED_EP_CONFIG"/>
+									<listOptionValue builtIn="false" value="FIXED_CONTROL_ENDPOINT_SIZE=8"/>
+									<listOptionValue builtIn="false" value="FIXED_NUM_CONFIGURATIONS=1"/>
+									<listOptionValue builtIn="false" value="USE_FLASH_DESCRIPTORS"/>
+									<listOptionValue builtIn="false" value="USE_STATIC_OPTIONS=&quot;(USB_DEVICE_OPT_FULLSPEED | USB_OPT_REG_ENABLED | USB_OPT_AUTO_PLL)&quot;"/>
+									<listOptionValue builtIn="false" value="INTERRUPT_CONTROL_ENDPOINT"/>
+								</option>
+								<option id="de.innot.avreclipse.compiler.option.otherflags.1566165436" superClass="de.innot.avreclipse.compiler.option.otherflags" value="-ffunction-sections -fdata-sections" valueType="string"/>
 								<inputType id="de.innot.avreclipse.compiler.winavr.input.2084198580" name="C Source Files" superClass="de.innot.avreclipse.compiler.winavr.input"/>
 							</tool>
 							<tool id="de.innot.avreclipse.tool.cppcompiler.app.release.912002244" name="AVR C++ Compiler" superClass="de.innot.avreclipse.tool.cppcompiler.app.release">
@@ -406,6 +433,7 @@
 								<option id="de.innot.avreclipse.cppcompiler.option.optimize.1657124646" name="Optimization Level" superClass="de.innot.avreclipse.cppcompiler.option.optimize" value="de.innot.avreclipse.cppcompiler.optimize.size" valueType="enumerated"/>
 							</tool>
 							<tool id="de.innot.avreclipse.tool.linker.winavr.app.release.381852607" name="AVR C Linker" superClass="de.innot.avreclipse.tool.linker.winavr.app.release">
+								<option id="de.innot.avreclipse.linker.option.otherlinkargs.270243458" superClass="de.innot.avreclipse.linker.option.otherlinkargs" value="-Wl,--relax,--gc-sections" valueType="string"/>
 								<inputType id="de.innot.avreclipse.tool.linker.input.567763029" name="OBJ Files" superClass="de.innot.avreclipse.tool.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -736,6 +764,8 @@
 				</scannerConfigBuildInfo>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+			<storageModule moduleId="org.eclipse.cdt.core.language.mapping"/>
+			<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
