@@ -41,9 +41,8 @@
 									<listOptionValue builtIn="false" value="FIXED_NUM_CONFIGURATIONS=1"/>
 									<listOptionValue builtIn="false" value="USE_FLASH_DESCRIPTORS"/>
 									<listOptionValue builtIn="false" value="USE_STATIC_OPTIONS=&quot;(USB_DEVICE_OPT_FULLSPEED | USB_OPT_REG_ENABLED | USB_OPT_AUTO_PLL)&quot;"/>
-									<listOptionValue builtIn="false" value="INTERRUPT_CONTROL_ENDPOINT"/>
 								</option>
-								<option id="de.innot.avreclipse.compiler.option.otherflags.1513967861" superClass="de.innot.avreclipse.compiler.option.otherflags" value="-ffunction-sections -fdata-sections" valueType="string"/>
+								<option id="de.innot.avreclipse.compiler.option.otherflags.1513967861" name="Other flags" superClass="de.innot.avreclipse.compiler.option.otherflags" value="-ffunction-sections -fdata-sections" valueType="string"/>
 								<inputType id="de.innot.avreclipse.compiler.winavr.input.1367172122" name="C Source Files" superClass="de.innot.avreclipse.compiler.winavr.input"/>
 							</tool>
 							<tool id="de.innot.avreclipse.tool.cppcompiler.app.debug.24092953" name="AVR C++ Compiler" superClass="de.innot.avreclipse.tool.cppcompiler.app.debug">
@@ -51,7 +50,7 @@
 								<option id="de.innot.avreclipse.cppcompiler.option.optimize.1022518531" name="Optimization Level" superClass="de.innot.avreclipse.cppcompiler.option.optimize"/>
 							</tool>
 							<tool id="de.innot.avreclipse.tool.linker.winavr.app.debug.806884166" name="AVR C Linker" superClass="de.innot.avreclipse.tool.linker.winavr.app.debug">
-								<option id="de.innot.avreclipse.linker.option.otherlinkargs.1714687929" superClass="de.innot.avreclipse.linker.option.otherlinkargs" value="-Wl,--relax,--gc-sections" valueType="string"/>
+								<option id="de.innot.avreclipse.linker.option.otherlinkargs.1714687929" name="Other Arguments" superClass="de.innot.avreclipse.linker.option.otherlinkargs" value="-Wl,--relax,--gc-sections" valueType="string"/>
 								<inputType id="de.innot.avreclipse.tool.linker.input.1020880987" name="OBJ Files" superClass="de.innot.avreclipse.tool.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -423,9 +422,8 @@
 									<listOptionValue builtIn="false" value="FIXED_NUM_CONFIGURATIONS=1"/>
 									<listOptionValue builtIn="false" value="USE_FLASH_DESCRIPTORS"/>
 									<listOptionValue builtIn="false" value="USE_STATIC_OPTIONS=&quot;(USB_DEVICE_OPT_FULLSPEED | USB_OPT_REG_ENABLED | USB_OPT_AUTO_PLL)&quot;"/>
-									<listOptionValue builtIn="false" value="INTERRUPT_CONTROL_ENDPOINT"/>
 								</option>
-								<option id="de.innot.avreclipse.compiler.option.otherflags.1566165436" superClass="de.innot.avreclipse.compiler.option.otherflags" value="-ffunction-sections -fdata-sections" valueType="string"/>
+								<option id="de.innot.avreclipse.compiler.option.otherflags.1566165436" name="Other flags" superClass="de.innot.avreclipse.compiler.option.otherflags" value="-ffunction-sections -fdata-sections" valueType="string"/>
 								<inputType id="de.innot.avreclipse.compiler.winavr.input.2084198580" name="C Source Files" superClass="de.innot.avreclipse.compiler.winavr.input"/>
 							</tool>
 							<tool id="de.innot.avreclipse.tool.cppcompiler.app.release.912002244" name="AVR C++ Compiler" superClass="de.innot.avreclipse.tool.cppcompiler.app.release">
@@ -433,7 +431,7 @@
 								<option id="de.innot.avreclipse.cppcompiler.option.optimize.1657124646" name="Optimization Level" superClass="de.innot.avreclipse.cppcompiler.option.optimize" value="de.innot.avreclipse.cppcompiler.optimize.size" valueType="enumerated"/>
 							</tool>
 							<tool id="de.innot.avreclipse.tool.linker.winavr.app.release.381852607" name="AVR C Linker" superClass="de.innot.avreclipse.tool.linker.winavr.app.release">
-								<option id="de.innot.avreclipse.linker.option.otherlinkargs.270243458" superClass="de.innot.avreclipse.linker.option.otherlinkargs" value="-Wl,--relax,--gc-sections" valueType="string"/>
+								<option id="de.innot.avreclipse.linker.option.otherlinkargs.270243458" name="Other Arguments" superClass="de.innot.avreclipse.linker.option.otherlinkargs" value="-Wl,--relax,--gc-sections" valueType="string"/>
 								<inputType id="de.innot.avreclipse.tool.linker.input.567763029" name="OBJ Files" superClass="de.innot.avreclipse.tool.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>

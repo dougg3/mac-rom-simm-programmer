@@ -11,6 +11,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+// Holds info about the chip (retrieved with JEDEC standards)
+struct ChipID
+{
+	uint8_t manufacturerID;
+	uint8_t deviceID;
+};
+
 // Initializes the (bit-banged) external memory interface
 void ExternalMem_Init(void);
 
@@ -43,5 +50,14 @@ void ExternalMem_DeassertOE(void);
 
 // Reads a set of data...
 void ExternalMem_Read(uint32_t startAddress, uint32_t *buf, uint32_t len);
+
+// Performs a write cycle
+void ExternalMem_WriteCycle(uint32_t address, uint32_t data);
+
+// Does an unlock sequence on the chips
+void ExternalMem_UnlockAllChips(void);
+
+// Identifies the chips that are currently in the SIMM
+void ExternalMem_IdentifyChips(struct ChipID *chips);
 
 #endif /* EXTERNAL_MEM_H_ */
