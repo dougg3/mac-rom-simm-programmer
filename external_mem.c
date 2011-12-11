@@ -141,7 +141,9 @@ void ExternalMem_WriteCycle(uint32_t address, uint32_t data)
 	ExternalMem_DeassertOE();
 	ExternalMem_SetAddressAndData(address, data);
 	ExternalMem_AssertWE();
-	_delay_us(1); // Give it a small amount of time needed? Could I do this with some NOP instructions instead of waiting 1us?
+	//_delay_us(1); // Give it a small amount of time needed? Could I do this with some NOP instructions instead of waiting 1us?
+// The minimum pulse time is 50 ns or so, and since one clock cycle is
+	// 62.5 ns, this should be fine to assert and deassert immediately
 	ExternalMem_DeassertWE();
 }
 
