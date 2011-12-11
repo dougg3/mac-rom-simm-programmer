@@ -64,7 +64,7 @@ typedef enum ProgrammerReply
 {
 	ReplyOK,
 	ReplyError,
-};
+} ProgrammerReply;
 
 static ProgrammerCommandState curCommandState = WaitingForCommand;
 static uint8_t byteAddressReceiveCount = 0;
@@ -75,28 +75,60 @@ void USBSerial_SendReadDataChunk(void);
 
 void USBSerial_Check(void)
 {
-	/*if (USB_DeviceState == DEVICE_STATE_Configured)
+	if (USB_DeviceState == DEVICE_STATE_Configured)
 	{
 		if (CDC_Device_BytesReceived(&VirtualSerial_CDC_Interface))
 		{
-			CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
+			uint8_t rb = (uint8_t)CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
 
-			struct ChipID chips[4];
-			ExternalMem_IdentifyChips(chips);
-			char tmp[20];
-			uint32_t data = ExternalMem_ReadCycle(0);
-
-			int x;
-			for (x = 0; x < 4; x++)
+			if (rb == 'i')
 			{
-				sprintf(tmp, "IC%d: M%02X, D%02X\r\n", x+1, chips[x].manufacturerID, chips[x].deviceID);
+				struct ChipID chips[4];
+				ExternalMem_IdentifyChips(chips);
+				char tmp[20];
+				uint32_t data = ExternalMem_ReadCycle(0);
+
+				int x;
+				for (x = 0; x < 4; x++)
+				{
+					sprintf(tmp, "IC%d: M%02X, D%02X\r\n", x+1, chips[x].manufacturerID, chips[x].deviceID);
+					CDC_Device_SendString(&VirtualSerial_CDC_Interface, tmp);
+				}
+
+				sprintf(tmp, "%08lX\r\n", data);
 				CDC_Device_SendString(&VirtualSerial_CDC_Interface, tmp);
 			}
-
-			sprintf(tmp, "%08lX\r\n", data);
-			CDC_Device_SendString(&VirtualSerial_CDC_Interface, tmp);
+			else if (rb == 'e')
+			{
+				ExternalMem_EraseChips(ALL_CHIPS);
+				CDC_Device_SendString(&VirtualSerial_CDC_Interface, "Erased\r\n");
+			}
+			else if (rb == 'r')
+			{
+				uint32_t result = ExternalMem_ReadCycle(0);
+				char tmp[20];
+				sprintf(tmp, "%08lX\r\n", result);
+				CDC_Device_SendString(&VirtualSerial_CDC_Interface, tmp);
+			}
+			else if (rb == 'w')
+			{
+				uint32_t address = 0;
+				uint32_t x;
+				uint32_t y;
+				CDC_Device_SendString(&VirtualSerial_CDC_Interface, "Writing...\r\n");
+				CDC_Device_Flush(&VirtualSerial_CDC_Interface);
+				for (y = 0; y < 512UL*1024UL / (READ_CHUNK_SIZE_BYTES/4); y++)
+				{
+					for (x = 0; x < READ_CHUNK_SIZE_BYTES/4; x++)
+					{
+						ExternalMem_WriteByteToChips(address++, 0x12345678, ALL_CHIPS);
+					}
+				}
+				//ExternalMem_WriteByteToChips(0, 0x12345678UL, ALL_CHIPS);
+				CDC_Device_SendString(&VirtualSerial_CDC_Interface, "Wrote\r\n");
+			}
 		}
-	}*/
+	}
 
 	/*if (USB_DeviceState == DEVICE_STATE_Configured)
 	{

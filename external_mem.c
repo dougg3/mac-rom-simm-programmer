@@ -8,9 +8,13 @@
 #include "external_mem.h"
 #include "ports.h"
 #include <avr/io.h>
-#include <avr/delay.h>
+#include <util/delay.h>
 
 #define HIGHEST_ADDRESS_LINE	20
+
+// Private functions
+uint32_t ExternalMem_MaskForChips(uint8_t chips);
+void ExternalMem_WaitCompletion(uint8_t chipsMask);
 
 // Allow this to be initialized more than once.
 // In case we mess with the port settings,
@@ -148,25 +152,58 @@ uint32_t ExternalMem_ReadCycle(uint32_t address)
 	ExternalMem_AssertOE();
 	ExternalMem_SetDataAsInput();
 	ExternalMem_SetAddress(address);
-	return ExternalMem_ReadData();
+	uint32_t tmp = ExternalMem_ReadData();
+	ExternalMem_DeassertOE();
+	return tmp;
 }
 
-void ExternalMem_UnlockAllChips(void)
+uint32_t ExternalMem_MaskForChips(uint8_t chips)
 {
+	// This is a private function we can use to
+	// ignore results from chips we don't want to address
+	// (or to stop from programming them)
+	uint32_t mask = 0;
+
+	if (chips & (1 << 0))
+	{
+		mask |= 0x000000FFUL;
+	}
+	if (chips & (1 << 1))
+	{
+		mask |= 0x0000FF00UL;
+	}
+	if (chips & (1 << 2))
+	{
+		mask |= 0x00FF0000UL;
+	}
+	if (chips & (1 << 3))
+	{
+		mask |= 0xFF000000UL;
+	}
+
+	return mask;
+}
+
+void ExternalMem_UnlockChips(uint8_t chipsMask)
+{
+	// Use a mask so we don't unlock chips we don't want to talk with
+	uint32_t mask = ExternalMem_MaskForChips(chipsMask);
+
 	// First part of unlock sequence:
 	// Write 0x55555555 to the address bus and 0xAA to the data bus
 	// (Some datasheets may only say 0x555 or 0x5555, but they ignore
 	// the upper bits, so writing the alternating pattern to all address lines
 	// should make it compatible with larger chips)
-	ExternalMem_WriteCycle(0x55555555UL, 0xAAAAAAAAUL);
+	ExternalMem_WriteCycle(0x55555555UL, 0xAAAAAAAAUL & mask);
 
 	// Second part of unlock sequence is the same thing, but reversed.
-	ExternalMem_WriteCycle(0xAAAAAAAAUL, 0x55555555UL);
+	ExternalMem_WriteCycle(0xAAAAAAAAUL, 0x55555555UL & mask);
 }
 
 void ExternalMem_IdentifyChips(struct ChipID *chips)
 {
-	ExternalMem_UnlockAllChips();
+	// Start by writing the unlock sequence to ALL chips
+	ExternalMem_UnlockChips(ALL_CHIPS);
 
 	// Write 0x90 to 0x55555555 for the identify command...
 	ExternalMem_WriteCycle(0x55555555UL, 0x90909090UL);
@@ -188,4 +225,65 @@ void ExternalMem_IdentifyChips(struct ChipID *chips)
 
 	// Exit software ID mode
 	ExternalMem_WriteCycle(0, 0xF0F0F0F0UL);
+}
+
+void ExternalMem_EraseChips(uint8_t chipsMask)
+{
+	ExternalMem_UnlockChips(chipsMask);
+	ExternalMem_WriteCycle(0x55555555UL, 0x80808080UL);
+	ExternalMem_UnlockChips(chipsMask);
+	ExternalMem_WriteCycle(0x55555555UL, 0x10101010UL);
+
+	ExternalMem_WaitCompletion(chipsMask);
+}
+
+void ExternalMem_WaitCompletion(uint8_t chipsMask)
+{
+	// Mark the chips not requested as already completed,
+	// so we don't end up waiting for them...
+	// (We probably wouldn't anyway, but this is just
+	// to be safe)
+	uint8_t erasedChipsMask = ~chipsMask & 0x0F;
+	// Prime the loop...
+	uint32_t lastBits = ExternalMem_ReadCycle(0);
+	while (erasedChipsMask != 0x0F)
+	{
+		// Compare the toggle bit to see if it didn't toggle
+		uint32_t tmp = ExternalMem_ReadCycle(0);
+		uint32_t mask = 0x00000040UL;
+		uint8_t x;
+		for (x = 0; x < 4; x++, mask <<= 8)
+		{
+			// No toggle means erase completed
+			if ((tmp & mask) == (lastBits & mask))
+			{
+				erasedChipsMask |= (1 << x);
+			}
+		}
+
+		// Save last bits to check for toggle again
+		lastBits = tmp;
+
+		// Keep going until all four chips have gone
+		// without toggling
+	}
+}
+
+void ExternalMem_WriteByteToChips(uint32_t address, uint32_t data, uint8_t chipsMask)
+{
+	// Use a mask so we don't unlock chips we don't want to talk with
+	uint32_t mask = ExternalMem_MaskForChips(chipsMask);
+
+	ExternalMem_UnlockChips(chipsMask);
+	ExternalMem_WriteCycle(0x55555555UL, 0xA0A0A0A0UL & mask);
+	ExternalMem_WriteCycle(address, data & mask);
+	ExternalMem_WaitCompletion(chipsMask);
+}
+
+void ExternalMem_Write(uint32_t startAddress, uint32_t *buf, uint32_t len, uint8_t chipsMask)
+{
+	while (len--)
+	{
+		ExternalMem_WriteByteToChips(startAddress++, *buf++, chipsMask);
+	}
 }
