@@ -9,6 +9,12 @@
 #include "../LUFA/Drivers/USB/USB.h"
 #include "../Descriptors.h"
 #include "../external_mem.h"
+#include "../tests/simm_electrical_test.h"
+
+#define READ_CHUNK_SIZE_BYTES		1024UL
+#if ((READ_CHUNK_SIZE_BYTES % 4) != 0)
+#error Read chunk size should be a multiple of 4 bytes
+#endif
 
 USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface =
 {
@@ -18,11 +24,11 @@ USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface =
 
 			.DataINEndpointNumber           = CDC_TX_EPNUM,
 			.DataINEndpointSize             = CDC_TXRX_EPSIZE,
-			.DataINEndpointDoubleBank       = false,
+			.DataINEndpointDoubleBank       = true,
 
 			.DataOUTEndpointNumber          = CDC_RX_EPNUM,
 			.DataOUTEndpointSize            = CDC_TXRX_EPSIZE,
-			.DataOUTEndpointDoubleBank      = false,
+			.DataOUTEndpointDoubleBank      = true,
 
 			.NotificationEndpointNumber     = CDC_NOTIFICATION_EPNUM,
 			.NotificationEndpointSize       = CDC_NOTIFICATION_EPSIZE,
@@ -34,6 +40,38 @@ void USBSerial_Init(void)
 {
 	USB_Init();
 }
+
+typedef enum ProgrammerCommandState
+{
+	WaitingForCommand = 0,
+	ReadingByteWaitingForAddress,
+	ReadingChips,
+	ReadingChipsUnableSendError,
+} ProgrammerCommandState;
+
+typedef enum ProgrammerCommand
+{
+	EnterWaitingMode = 0,
+	DoElectricalTest,
+	IdentifyChips,
+	ReadByte,
+	ReadChips,
+	EraseChips,
+	WriteChips,
+} ProgrammerCommand;
+
+typedef enum ProgrammerReply
+{
+	ReplyOK,
+	ReplyError,
+};
+
+static ProgrammerCommandState curCommandState = WaitingForCommand;
+static uint8_t byteAddressReceiveCount = 0;
+static uint16_t curReadIndex;
+
+void USBSerial_HandleWaitingForCommandByte(uint8_t byte);
+void USBSerial_SendReadDataChunk(void);
 
 void USBSerial_Check(void)
 {
@@ -56,9 +94,88 @@ void USBSerial_Check(void)
 		}
 	}*/
 
+	if (USB_DeviceState == DEVICE_STATE_Configured)
+	{
+		// Check for commands, etc...
+		int16_t recvByte = CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
+
+		if (recvByte >= 0)
+		{
+			switch (curCommandState)
+			{
+			case WaitingForCommand:
+				USBSerial_HandleWaitingForCommandByte((uint8_t)recvByte);
+				break;
+			}
+		}
+	}
+
 	CDC_Device_USBTask(&VirtualSerial_CDC_Interface);
 	USB_USBTask();
 }
+
+void USBSerial_HandleWaitingForCommandByte(uint8_t byte)
+{
+	switch (byte)
+	{
+	case EnterWaitingMode:
+		curCommandState = WaitingForCommand;
+		break;
+	case DoElectricalTest:
+		CDC_Device_SendByte(&VirtualSerial_CDC_Interface, ReplyOK);
+		SIMMElectricalTest_Run();
+		curCommandState = WaitingForCommand;
+		break;
+	case IdentifyChips:
+	{
+		struct ChipID chips[4];
+		CDC_Device_SendByte(&VirtualSerial_CDC_Interface, ReplyOK);
+		ExternalMem_IdentifyChips(chips);
+		// TODO: Send chip ID info back to receiver
+		break;
+	}
+	case ReadByte:
+		curCommandState = ReadingByteWaitingForAddress;
+		byteAddressReceiveCount = 0;
+		CDC_Device_SendByte(&VirtualSerial_CDC_Interface, ReplyOK);
+		break;
+	case ReadChips:
+		curCommandState = ReadingChips;
+		curReadIndex = 0;
+		CDC_Device_SendByte(&VirtualSerial_CDC_Interface, ReplyOK);
+		USBSerial_SendReadDataChunk();
+		break;
+	case EraseChips:
+	case WriteChips:
+		break;
+	}
+}
+
+void USBSerial_SendReadDataChunk(void)
+{
+	// TODO: How do I send an error back to the device?
+	// Maybe the device, when it tries to request the next data chunk,
+	// will get an ERROR response instead of an "OK" response?
+
+	static union
+	{
+		uint32_t readChunks[READ_CHUNK_SIZE_BYTES / 4];
+		uint8_t readChunkBytes[READ_CHUNK_SIZE_BYTES];
+	} chunks;
+
+	ExternalMem_Read(curReadIndex * (READ_CHUNK_SIZE_BYTES/4), chunks.readChunks, READ_CHUNK_SIZE_BYTES/4);
+	uint8_t retVal = CDC_Device_SendData(&VirtualSerial_CDC_Interface, (const char *)chunks.readChunkBytes, READ_CHUNK_SIZE_BYTES);
+	if (retVal != ENDPOINT_RWSTREAM_NoError)
+	{
+		curCommandState = ReadingChipsUnableSendError;
+	}
+	else
+	{
+		curReadIndex++;
+	}
+}
+
+
 
 /** Event handler for the library USB Configuration Changed event. */
 void EVENT_USB_Device_ConfigurationChanged(void)
