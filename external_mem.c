@@ -59,6 +59,10 @@ void ExternalMem_SetData(uint32_t data)
 {
 	Ports_SetDataDDR(0xFFFFFFFFUL);
 	Ports_SetDataOut(data);
+	/*DDRE = 0xFF;
+	DDRF = 0xFF;
+	PORTE = (data & 0xFF);
+	PORTF = ((data >> 8) & 0xFF);*/
 }
 
 void ExternalMem_SetAddressAndData(uint32_t address, uint32_t data)
@@ -70,11 +74,14 @@ void ExternalMem_SetAddressAndData(uint32_t address, uint32_t data)
 void ExternalMem_SetDataAsInput(void)
 {
 	Ports_SetDataDDR(0);
+	//DDRE = 0;
+	//DDRF = 0;
 }
 
 uint32_t ExternalMem_ReadData(void)
 {
 	return Ports_ReadData();
+	//return (uint32_t)PINE | (((uint32_t)PINF) << 8);
 }
 
 void ExternalMem_AssertCS(void)

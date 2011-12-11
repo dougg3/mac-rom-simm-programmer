@@ -127,6 +127,15 @@ void USBSerial_Check(void)
 				//ExternalMem_WriteByteToChips(0, 0x12345678UL, ALL_CHIPS);
 				CDC_Device_SendString(&VirtualSerial_CDC_Interface, "Wrote\r\n");
 			}
+			else if (rb == 't')
+			{
+				int result = SIMMElectricalTest_Run();
+
+				char tmp[20];
+				CDC_Device_SendString(&VirtualSerial_CDC_Interface, "SIMM electrical test complete: ");
+				sprintf(tmp, "%d errors\r\n", result);
+				CDC_Device_SendString(&VirtualSerial_CDC_Interface, tmp);
+			}
 		}
 	}
 
