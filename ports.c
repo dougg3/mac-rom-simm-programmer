@@ -14,10 +14,16 @@
 #define SIMM_OE		(1 << 5)
 #define SIMM_CS		(1 << 4)
 
+// Save some time by not changing the register
+// unless the value has changed [SPI = relatively slow]
+static uint32_t savedDataDDR = 0;
+
 void Ports_Init(void)
 {
 	// This module depends on the MPC23S17
 	MCP23S17_Init();
+	savedDataDDR = 0xFFFFFFFFUL;
+	Ports_SetDataDDR(0);
 }
 
 void Ports_SetAddressOut(uint32_t data)
@@ -164,13 +170,19 @@ void Ports_AddressDDR_RMW(uint32_t ddr, uint32_t modifyMask)
 
 void Ports_SetDataDDR(uint32_t ddr)
 {
-	MCP23S17_SetDDR(ddr & 0xFFFF); // D0-D15
-	DDRE = ((ddr >> 16) & 0xFF); // D16-D23
-	DDRF = ((ddr >> 24) & 0xFF); // D24-D31
+	if (savedDataDDR != ddr)
+	{
+		MCP23S17_SetDDR(ddr & 0xFFFF); // D0-D15
+		DDRE = ((ddr >> 16) & 0xFF); // D16-D23
+		DDRF = ((ddr >> 24) & 0xFF); // D24-D31
+
+		savedDataDDR = ddr;
+	}
 }
 
 void Ports_DataDDR_RMW(uint32_t ddr, uint32_t modifyMask)
 {
+	uint32_t newSavedDataDDR;
 	uint32_t modifiedDataOn = ddr & modifyMask;
 	uint32_t modifiedDataOff = ddr | ~modifyMask;
 
@@ -178,6 +190,9 @@ void Ports_DataDDR_RMW(uint32_t ddr, uint32_t modifyMask)
 	if ((modifyMask & 0xFFFF) == 0xFFFF)
 	{
 		MCP23S17_SetDDR(modifiedDataOn & 0xFFFF);
+
+		// Remember what the new DDR will be
+		newSavedDataDDR = modifiedDataOn & 0xFFFF;
 	}
 	else // Otherwise, we have to read what's in it first...(unless I decide to keep a local cached copy)
 	{
@@ -185,6 +200,9 @@ void Ports_DataDDR_RMW(uint32_t ddr, uint32_t modifyMask)
 		outputLatches |= (modifiedDataOn) & 0xFFFF;
 		outputLatches &= modifiedDataOff & 0xFFFF;
 		MCP23S17_SetDDR(outputLatches);
+
+		// Remember what the new DDR will be
+		newSavedDataDDR = outputLatches;
 	}
 
 	// Turn on/off requested bits in the DDR register.
@@ -192,6 +210,13 @@ void Ports_DataDDR_RMW(uint32_t ddr, uint32_t modifyMask)
 	DDRE &= ((modifiedDataOff >> 16) & 0xFF);
 	DDRF |= ((modifiedDataOn >> 24) & 0xFF);
 	DDRF &= ((modifiedDataOff >> 24) & 0xFF);
+
+	// Remember what the new DDR will be
+	newSavedDataDDR |= ((uint32_t)DDRE) << 16;
+	newSavedDataDDR |= ((uint32_t)DDRF) << 24;
+
+	// Save the new DDR
+	savedDataDDR = newSavedDataDDR;
 }
 
 void Ports_SetCSDDR(bool ddr)

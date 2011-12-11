@@ -84,17 +84,21 @@ void USBSerial_Check(void)
 			struct ChipID chips[4];
 			ExternalMem_IdentifyChips(chips);
 			char tmp[20];
+			uint32_t data = ExternalMem_ReadCycle(0);
 
 			int x;
 			for (x = 0; x < 4; x++)
 			{
-				sprintf(tmp, "IC%d: M%02X, D%02X\r\n", x, chips[x].manufacturerID, chips[x].deviceID);
+				sprintf(tmp, "IC%d: M%02X, D%02X\r\n", x+1, chips[x].manufacturerID, chips[x].deviceID);
 				CDC_Device_SendString(&VirtualSerial_CDC_Interface, tmp);
 			}
+
+			sprintf(tmp, "%08lX\r\n", data);
+			CDC_Device_SendString(&VirtualSerial_CDC_Interface, tmp);
 		}
 	}*/
 
-	if (USB_DeviceState == DEVICE_STATE_Configured)
+	/*if (USB_DeviceState == DEVICE_STATE_Configured)
 	{
 		// Check for commands, etc...
 		int16_t recvByte = CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
@@ -108,7 +112,7 @@ void USBSerial_Check(void)
 				break;
 			}
 		}
-	}
+	}*/
 
 	CDC_Device_USBTask(&VirtualSerial_CDC_Interface);
 	USB_USBTask();

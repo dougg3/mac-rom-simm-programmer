@@ -105,8 +105,13 @@ void ExternalMem_DeassertOE(void)
 
 void ExternalMem_Read(uint32_t startAddress, uint32_t *buf, uint32_t len)
 {
+	// This is just a time saver if we know we will
+	// be reading a complete block -- doesn't bother
+	// playing with the control lines between each byte
+	ExternalMem_DeassertWE();
 	ExternalMem_AssertCS();
 	ExternalMem_AssertOE();
+	ExternalMem_SetDataAsInput();
 
 	while (len--)
 	{
@@ -128,22 +133,26 @@ void ExternalMem_Read(uint32_t startAddress, uint32_t *buf, uint32_t len)
 
 void ExternalMem_WriteCycle(uint32_t address, uint32_t data)
 {
+	ExternalMem_AssertCS();
+	ExternalMem_DeassertOE();
 	ExternalMem_SetAddressAndData(address, data);
 	ExternalMem_AssertWE();
-
 	_delay_us(1); // Give it a small amount of time needed? Could I do this with some NOP instructions instead of waiting 1us?
 	ExternalMem_DeassertWE();
 }
 
+uint32_t ExternalMem_ReadCycle(uint32_t address)
+{
+	ExternalMem_DeassertWE();
+	ExternalMem_AssertCS();
+	ExternalMem_AssertOE();
+	ExternalMem_SetDataAsInput();
+	ExternalMem_SetAddress(address);
+	return ExternalMem_ReadData();
+}
+
 void ExternalMem_UnlockAllChips(void)
 {
-	// Disable the chips completely and wait for a short time...
-	ExternalMem_DeassertCS();
-	ExternalMem_DeassertOE();
-	ExternalMem_DeassertWE();
-	_delay_us(1);
-	ExternalMem_AssertCS();
-
 	// First part of unlock sequence:
 	// Write 0x55555555 to the address bus and 0xAA to the data bus
 	// (Some datasheets may only say 0x555 or 0x5555, but they ignore
@@ -163,19 +172,14 @@ void ExternalMem_IdentifyChips(struct ChipID *chips)
 	ExternalMem_WriteCycle(0x55555555UL, 0x90909090UL);
 
 	// Now we can read the vendor and product ID
-	ExternalMem_SetAddress(0);
-	ExternalMem_SetDataAsInput();
-	ExternalMem_AssertOE();
-
-	uint32_t result = ExternalMem_ReadData();
+	uint32_t result = ExternalMem_ReadCycle(0);
 
 	chips[3].manufacturerID = (uint8_t)result;
 	chips[2].manufacturerID = (uint8_t)(result >> 8);
 	chips[1].manufacturerID = (uint8_t)(result >> 16);
 	chips[0].manufacturerID = (uint8_t)(result >> 24);
 
-	ExternalMem_SetAddress(1);
-	result = ExternalMem_ReadData();
+	result = ExternalMem_ReadCycle(1);
 
 	chips[3].deviceID = (uint8_t)result;
 	chips[2].deviceID = (uint8_t)(result >> 8);
@@ -183,6 +187,5 @@ void ExternalMem_IdentifyChips(struct ChipID *chips)
 	chips[0].deviceID = (uint8_t)(result >> 24);
 
 	// Exit software ID mode
-	ExternalMem_DeassertOE();
 	ExternalMem_WriteCycle(0, 0xF0F0F0F0UL);
 }

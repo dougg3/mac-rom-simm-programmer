@@ -51,8 +51,11 @@ void ExternalMem_DeassertOE(void);
 // Reads a set of data...
 void ExternalMem_Read(uint32_t startAddress, uint32_t *buf, uint32_t len);
 
-// Performs a write cycle
+// Performs a single write cycle
 void ExternalMem_WriteCycle(uint32_t address, uint32_t data);
+
+// Performs a single read cycle
+uint32_t ExternalMem_ReadCycle(uint32_t address);
 
 // Does an unlock sequence on the chips
 void ExternalMem_UnlockAllChips(void);
