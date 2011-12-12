@@ -45,9 +45,10 @@ void ExternalMem_Init(void)
 	Ports_SetWEDDR(1);
 
 	// Default all control lines to high (de-asserted)
-	ExternalMem_DeassertCS();
+	/*ExternalMem_DeassertCS();
 	ExternalMem_DeassertOE();
-	ExternalMem_DeassertWE();
+	ExternalMem_DeassertWE();*/
+	ExternalMem_Deassert(SIMM_CS | SIMM_OE | SIMM_WE);
 }
 
 void ExternalMem_SetAddress(uint32_t address)
@@ -84,7 +85,7 @@ uint32_t ExternalMem_ReadData(void)
 	//return (uint32_t)PINE | (((uint32_t)PINF) << 8);
 }
 
-void ExternalMem_AssertCS(void)
+/*void ExternalMem_AssertCS(void)
 {
 	Ports_SetCSOut(0);
 }
@@ -112,16 +113,18 @@ void ExternalMem_AssertOE(void)
 void ExternalMem_DeassertOE(void)
 {
 	Ports_SetOEOut(1);
-}
+}*/
 
 void ExternalMem_Read(uint32_t startAddress, uint32_t *buf, uint32_t len)
 {
 	// This is just a time saver if we know we will
 	// be reading a complete block -- doesn't bother
 	// playing with the control lines between each byte
-	ExternalMem_DeassertWE();
-	ExternalMem_AssertCS();
-	ExternalMem_AssertOE();
+	//ExternalMem_DeassertWE();
+	//ExternalMem_AssertCS();
+	//ExternalMem_AssertOE();
+	ExternalMem_Deassert(SIMM_WE);
+	ExternalMem_Assert(SIMM_CS | SIMM_OE);
 	ExternalMem_SetDataAsInput();
 
 	while (len--)
@@ -144,25 +147,32 @@ void ExternalMem_Read(uint32_t startAddress, uint32_t *buf, uint32_t len)
 
 void ExternalMem_WriteCycle(uint32_t address, uint32_t data)
 {
-	ExternalMem_AssertCS();
-	ExternalMem_DeassertOE();
+	/*ExternalMem_AssertCS();
+	ExternalMem_DeassertOE();*/
+	ExternalMem_Assert(SIMM_CS);
+	ExternalMem_Deassert(SIMM_OE | SIMM_WE);
 	ExternalMem_SetAddressAndData(address, data);
-	ExternalMem_AssertWE();
+	ExternalMem_Assert(SIMM_WE);
+	//ExternalMem_AssertWE();
 	//_delay_us(1); // Give it a small amount of time needed? Could I do this with some NOP instructions instead of waiting 1us?
 // The minimum pulse time is 50 ns or so, and since one clock cycle is
 	// 62.5 ns, this should be fine to assert and deassert immediately
-	ExternalMem_DeassertWE();
+	//ExternalMem_DeassertWE();
+	ExternalMem_Deassert(SIMM_WE);
 }
 
 uint32_t ExternalMem_ReadCycle(uint32_t address)
 {
-	ExternalMem_DeassertWE();
-	ExternalMem_AssertCS();
-	ExternalMem_AssertOE();
+	//ExternalMem_DeassertWE();
+	//ExternalMem_AssertCS();
+	//ExternalMem_AssertOE();
+	ExternalMem_Deassert(SIMM_WE);
+	ExternalMem_Assert(SIMM_CS | SIMM_OE);
 	ExternalMem_SetDataAsInput();
 	ExternalMem_SetAddress(address);
 	uint32_t tmp = ExternalMem_ReadData();
-	ExternalMem_DeassertOE();
+	//ExternalMem_DeassertOE();
+	ExternalMem_Deassert(SIMM_OE);
 	return tmp;
 }
 
@@ -248,15 +258,73 @@ void ExternalMem_EraseChips(uint8_t chipsMask)
 
 void ExternalMem_WaitCompletion(uint8_t chipsMask)
 {
+	//_delay_us(18);
+
+	//#if 0
 	// Mark the chips not requested as already completed,
 	// so we don't end up waiting for them...
 	// (We probably wouldn't anyway, but this is just
 	// to be safe)
-	uint8_t erasedChipsMask = ~chipsMask & 0x0F;
+	uint8_t doneChipsMask = ~chipsMask & 0x0F;
+
 	// Prime the loop...
+	//union
+	//{
+	//	uint32_t word;
+	//	uint8_t bytes[4];
+	//} lastBits, tmp;
+
 	uint32_t lastBits = ExternalMem_ReadCycle(0);
-	while (erasedChipsMask != 0x0F)
+
+	//lastBits.word = ExternalMem_ReadCycle(0);
+	while (doneChipsMask != 0x0F)
 	{
+/*#define TOGGLE_BIT		0x40
+
+		tmp.word = ExternalMem_ReadCycle(0);
+
+		// Note: The following assumes little endian byte ordering
+		// (e.g. tmpBytes[0] is the least significant byte of tmpWord
+
+		// Has this chip completed its operation? No?
+		if ((doneChipsMask & (1 << 0)) == 0)
+		{
+			// No toggle means erase completed
+			if ((tmp.bytes[0] & TOGGLE_BIT) == (lastBits.bytes[0] & TOGGLE_BIT))
+			{
+				doneChipsMask |= (1 << 0);
+			}
+		}
+
+		if ((doneChipsMask & (1 << 1)) == 0)
+		{
+			// No toggle means erase completed
+			if ((tmp.bytes[1] & TOGGLE_BIT) == (lastBits.bytes[1] & TOGGLE_BIT))
+			{
+				doneChipsMask |= (1 << 1);
+			}
+		}
+
+		if ((doneChipsMask & (1 << 2)) == 0)
+		{
+			// No toggle means erase completed
+			if ((tmp.bytes[2] & TOGGLE_BIT) == (lastBits.bytes[2] & TOGGLE_BIT))
+			{
+				doneChipsMask |= (1 << 2);
+			}
+		}
+
+		if ((doneChipsMask & (1 << 3)) == 0)
+		{
+			// No toggle means erase completed
+			if ((tmp.bytes[3] & TOGGLE_BIT) == (lastBits.bytes[3] & TOGGLE_BIT))
+			{
+				doneChipsMask |= (1 << 3);
+			}
+		}
+
+		lastBits.word = tmp.word;*/
+
 		// Compare the toggle bit to see if it didn't toggle
 		uint32_t tmp = ExternalMem_ReadCycle(0);
 		uint32_t mask = 0x00000040UL;
@@ -266,7 +334,7 @@ void ExternalMem_WaitCompletion(uint8_t chipsMask)
 			// No toggle means erase completed
 			if ((tmp & mask) == (lastBits & mask))
 			{
-				erasedChipsMask |= (1 << x);
+				doneChipsMask |= (1 << x);
 			}
 		}
 
@@ -276,6 +344,7 @@ void ExternalMem_WaitCompletion(uint8_t chipsMask)
 		// Keep going until all four chips have gone
 		// without toggling
 	}
+//#endif
 }
 
 void ExternalMem_WriteByteToChips(uint32_t address, uint32_t data, uint8_t chipsMask)

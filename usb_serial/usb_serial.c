@@ -136,6 +136,19 @@ void USBSerial_Check(void)
 				sprintf(tmp, "%d errors\r\n", result);
 				CDC_Device_SendString(&VirtualSerial_CDC_Interface, tmp);
 			}
+			else if (rb == 'a')
+			{
+				uint32_t x;
+				CDC_Device_SendString(&VirtualSerial_CDC_Interface, "Reading...\r\n");
+				CDC_Device_Flush(&VirtualSerial_CDC_Interface);
+
+				for (x = 0; x < 512UL*1024UL; x++)
+				{
+					ExternalMem_ReadCycle(x);
+				}
+
+				CDC_Device_SendString(&VirtualSerial_CDC_Interface, "Finished\r\n");
+			}
 		}
 	}
 

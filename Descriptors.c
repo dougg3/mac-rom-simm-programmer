@@ -67,7 +67,7 @@ const USB_Descriptor_Device_t PROGMEM DeviceDescriptor =
 
 	.VendorID               = 0x03EB,
 	.ProductID              = 0x204B,
-	.ReleaseNumber          = VERSION_BCD(00.01),
+	.ReleaseNumber          = VERSION_BCD(00.02),
 
 	.ManufacturerStrIndex   = 0x01,
 	.ProductStrIndex        = 0x02,
@@ -95,7 +95,7 @@ const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor =
 
 			.ConfigAttributes       = (USB_CONFIG_ATTR_BUSPOWERED | USB_CONFIG_ATTR_SELFPOWERED),
 
-			.MaxPowerConsumption    = USB_CONFIG_POWER_MA(100)
+			.MaxPowerConsumption    = USB_CONFIG_POWER_MA(500)
 		},
 
 	.CDC_CCI_Interface =

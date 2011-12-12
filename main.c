@@ -21,8 +21,8 @@ int main(void)
 
 	ExternalMem_Init();
 	ExternalMem_SetAddress(0);
-	ExternalMem_AssertCS();
-	ExternalMem_AssertOE();
+	ExternalMem_Assert(SIMM_CS | SIMM_OE);
+	ExternalMem_Deassert(SIMM_WE);
 	USBSerial_Init();
 	sei();
 
