@@ -124,8 +124,8 @@ void ExternalMem_Read(uint32_t startAddress, uint32_t *buf, uint32_t len)
 	//ExternalMem_AssertCS();
 	//ExternalMem_AssertOE();
 	ExternalMem_Deassert(SIMM_WE);
-	ExternalMem_Assert(SIMM_CS | SIMM_OE);
 	ExternalMem_SetDataAsInput();
+	ExternalMem_Assert(SIMM_CS | SIMM_OE);
 
 	while (len--)
 	{
@@ -166,9 +166,10 @@ uint32_t ExternalMem_ReadCycle(uint32_t address)
 	//ExternalMem_DeassertWE();
 	//ExternalMem_AssertCS();
 	//ExternalMem_AssertOE();
+
 	ExternalMem_Deassert(SIMM_WE);
-	ExternalMem_Assert(SIMM_CS | SIMM_OE);
 	ExternalMem_SetDataAsInput();
+	ExternalMem_Assert(SIMM_CS | SIMM_OE);
 	ExternalMem_SetAddress(address);
 	uint32_t tmp = ExternalMem_ReadData();
 	//ExternalMem_DeassertOE();
@@ -268,18 +269,18 @@ void ExternalMem_WaitCompletion(uint8_t chipsMask)
 	uint8_t doneChipsMask = ~chipsMask & 0x0F;
 
 	// Prime the loop...
-	//union
-	//{
-	//	uint32_t word;
-	//	uint8_t bytes[4];
-	//} lastBits, tmp;
+	union
+	{
+		uint32_t word;
+		uint8_t bytes[4];
+	} lastBits, tmp;
 
-	uint32_t lastBits = ExternalMem_ReadCycle(0);
+	//uint32_t lastBits = ExternalMem_ReadCycle(0);
 
-	//lastBits.word = ExternalMem_ReadCycle(0);
+	lastBits.word = ExternalMem_ReadCycle(0);
 	while (doneChipsMask != 0x0F)
 	{
-/*#define TOGGLE_BIT		0x40
+#define TOGGLE_BIT		0x40
 
 		tmp.word = ExternalMem_ReadCycle(0);
 
@@ -323,9 +324,9 @@ void ExternalMem_WaitCompletion(uint8_t chipsMask)
 			}
 		}
 
-		lastBits.word = tmp.word;*/
+		lastBits.word = tmp.word;
 
-		// Compare the toggle bit to see if it didn't toggle
+		/*// Compare the toggle bit to see if it didn't toggle
 		uint32_t tmp = ExternalMem_ReadCycle(0);
 		uint32_t mask = 0x00000040UL;
 		uint8_t x;
@@ -342,7 +343,7 @@ void ExternalMem_WaitCompletion(uint8_t chipsMask)
 		lastBits = tmp;
 
 		// Keep going until all four chips have gone
-		// without toggling
+		// without toggling*/
 	}
 //#endif
 }

@@ -19,6 +19,14 @@ int main(void)
 	DDRD |= (1 << 7);
 	PORTD &= ~(1 << 7);
 
+	if (MCUSR & (1 << BORF))
+	{
+		MCUSR = 0;
+		PORTD |= (1 << 7);
+		_delay_ms(500);
+		PORTD &= ~(1 << 7);
+	}
+
 	ExternalMem_Init();
 	ExternalMem_SetAddress(0);
 	ExternalMem_Assert(SIMM_CS | SIMM_OE);
