@@ -164,12 +164,12 @@ void MCP23S17_WriteBothRegs(uint8_t addrA, uint16_t value)
 	tmp = SPDR;
 
 	// Write the first byte of the register
-	SPDR = (uint8_t)(value & 0xFF);
+	SPDR = (uint8_t)((value >> 8) & 0xFF);
 	while ((SPSR & (1 << SPIF)) == 0);
 	tmp = SPDR;
 
 	// It should auto-increment to the "B" register, now write that
-	SPDR = (uint8_t)((value >> 8) & 0xFF);
+	SPDR = (uint8_t)(value & 0xFF);
 	while ((SPSR & (1 << SPIF)) == 0);
 	tmp = SPDR;
 
@@ -199,12 +199,12 @@ uint16_t MCP23S17_ReadBothRegs(uint8_t addrA)
 	// Read the first byte of the register
 	SPDR = 0;
 	while ((SPSR & (1 << SPIF)) == 0);
-	returnVal = SPDR;
+	returnVal = (((uint16_t)SPDR) << 8);
 
 	// It should auto-increment to the "B" register, now read that
 	SPDR = 0;
 	while ((SPSR & (1 << SPIF)) == 0);
-	returnVal |= (((uint16_t)SPDR) << 8);
+	returnVal |= SPDR;
 
 	DEASSERT_CS();
 

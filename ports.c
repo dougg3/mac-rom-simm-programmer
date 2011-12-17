@@ -73,9 +73,9 @@ void Ports_SetDataOut(uint32_t data)
 	// used as outputs
 
 	// Set the actual outputted values
-	MCP23S17_SetPins(data & 0xFFFF); // D0-D15
-	PORTE = ((data >> 16) & 0xFF); // D16-D23
-	PORTF = ((data >> 24) & 0xFF); // D24-D31
+	MCP23S17_SetPins((data >> 16) & 0xFFFF); // D0-D15
+	PORTE = ((data >> 8) & 0xFF); // D16-D23
+	PORTF = ((data >> 0) & 0xFF); // D24-D31
 }
 
 void Ports_DataOut_RMW(uint32_t data, uint32_t modifyMask)
@@ -85,15 +85,15 @@ void Ports_DataOut_RMW(uint32_t data, uint32_t modifyMask)
 
 	// Read what's in it first...
 	uint16_t outputLatches = MCP23S17_GetOutputs();
-	outputLatches |= (modifiedDataOn) & 0xFFFF;
-	outputLatches &= modifiedDataOff & 0xFFFF;
+	outputLatches |= (modifiedDataOn >> 16) & 0xFFFF;
+	outputLatches &= (modifiedDataOff >> 16) & 0xFFFF;
 	MCP23S17_SetPins(outputLatches);
 
 	// Turn on/off requested bits in the PORT register.
-	PORTE |= ((modifiedDataOn >> 16) & 0xFF);
-	PORTE &= ((modifiedDataOff >> 16) & 0xFF);
-	PORTF |= ((modifiedDataOn >> 24) & 0xFF);
-	PORTF &= ((modifiedDataOff >> 24) & 0xFF);
+	PORTE |= ((modifiedDataOn >> 8) & 0xFF);
+	PORTE &= ((modifiedDataOff >> 8) & 0xFF);
+	PORTF |= ((modifiedDataOn >> 0) & 0xFF);
+	PORTF &= ((modifiedDataOff >> 0) & 0xFF);
 }
 
 void Ports_SetCSOut(bool data)
@@ -172,9 +172,9 @@ void Ports_SetDataDDR(uint32_t ddr)
 {
 	if (savedDataDDR != ddr)
 	{
-		MCP23S17_SetDDR(ddr & 0xFFFF); // D0-D15
-		DDRE = ((ddr >> 16) & 0xFF); // D16-D23
-		DDRF = ((ddr >> 24) & 0xFF); // D24-D31
+		MCP23S17_SetDDR((ddr >> 16) & 0xFFFF); // D0-D15
+		DDRE = ((ddr >> 8) & 0xFF); // D16-D23
+		DDRF = ((ddr >> 0) & 0xFF); // D24-D31
 
 		savedDataDDR = ddr;
 	}
@@ -187,33 +187,33 @@ void Ports_DataDDR_RMW(uint32_t ddr, uint32_t modifyMask)
 	uint32_t modifiedDataOff = ddr | ~modifyMask;
 
 	// If we can get away with it, don't bother reading back...
-	if ((modifyMask & 0xFFFF) == 0xFFFF)
+	if (((modifyMask >> 16) & 0xFFFF) == 0xFFFF)
 	{
-		MCP23S17_SetDDR(modifiedDataOn & 0xFFFF);
+		MCP23S17_SetDDR((modifiedDataOn >> 16) & 0xFFFF);
 
 		// Remember what the new DDR will be
-		newSavedDataDDR = modifiedDataOn & 0xFFFF;
+		newSavedDataDDR = (modifiedDataOn & 0xFFFF0000UL);
 	}
 	else // Otherwise, we have to read what's in it first...(unless I decide to keep a local cached copy)
 	{
 		uint16_t outputLatches = MCP23S17_GetDDR();
-		outputLatches |= (modifiedDataOn) & 0xFFFF;
-		outputLatches &= modifiedDataOff & 0xFFFF;
+		outputLatches |= (modifiedDataOn >> 16) & 0xFFFF;
+		outputLatches &= (modifiedDataOff >> 16) & 0xFFFF;
 		MCP23S17_SetDDR(outputLatches);
 
 		// Remember what the new DDR will be
-		newSavedDataDDR = outputLatches;
+		newSavedDataDDR = ((uint32_t)outputLatches << 16);
 	}
 
 	// Turn on/off requested bits in the DDR register.
-	DDRE |= ((modifiedDataOn >> 16) & 0xFF);
-	DDRE &= ((modifiedDataOff >> 16) & 0xFF);
-	DDRF |= ((modifiedDataOn >> 24) & 0xFF);
-	DDRF &= ((modifiedDataOff >> 24) & 0xFF);
+	DDRE |= ((modifiedDataOn >> 8) & 0xFF);
+	DDRE &= ((modifiedDataOff >> 8) & 0xFF);
+	DDRF |= ((modifiedDataOn >> 0) & 0xFF);
+	DDRF &= ((modifiedDataOff >> 0) & 0xFF);
 
 	// Remember what the new DDR will be
-	newSavedDataDDR |= ((uint32_t)DDRE) << 16;
-	newSavedDataDDR |= ((uint32_t)DDRF) << 24;
+	newSavedDataDDR |= ((uint32_t)DDRE) << 8;
+	newSavedDataDDR |= ((uint32_t)DDRF) << 0;
 
 	// Save the new DDR
 	savedDataDDR = newSavedDataDDR;
@@ -270,23 +270,23 @@ void Ports_DataPullups_RMW(uint32_t pullups, uint32_t modifyMask)
 	uint32_t modifiedDataOff = pullups | ~modifyMask;
 
 	// If we can get away with it, don't bother reading back...
-	if ((modifyMask & 0xFFFF) == 0xFFFF)
+	if (((modifyMask >> 16) & 0xFFFF) == 0xFFFF)
 	{
-		MCP23S17_SetPullups(modifiedDataOn & 0xFFFF);
+		MCP23S17_SetPullups((modifiedDataOn >> 16) & 0xFFFF);
 	}
 	else // Otherwise, we have to read what's in it first...(unless I decide to keep a local cached copy)
 	{
 		uint16_t outputLatches = MCP23S17_GetPullups();
-		outputLatches |= (modifiedDataOn) & 0xFFFF;
-		outputLatches &= modifiedDataOff & 0xFFFF;
+		outputLatches |= (modifiedDataOn >> 16) & 0xFFFF;
+		outputLatches &= (modifiedDataOff >> 16) & 0xFFFF;
 		MCP23S17_SetPullups(outputLatches);
 	}
 
 	// Turn on/off requested bits in the PORT register for the other 16 bits.
-	PORTE |= ((modifiedDataOn >> 16) & 0xFF);
-	PORTE &= ((modifiedDataOff >> 16) & 0xFF);
-	PORTF |= ((modifiedDataOn >> 24) & 0xFF);
-	PORTF &= ((modifiedDataOff >> 24) & 0xFF);
+	PORTE |= ((modifiedDataOn >> 8) & 0xFF);
+	PORTE &= ((modifiedDataOff >> 8) & 0xFF);
+	PORTF |= ((modifiedDataOn >> 0) & 0xFF);
+	PORTF &= ((modifiedDataOff >> 0) & 0xFF);
 }
 
 void Ports_SetCSPullup(bool pullup)
@@ -338,11 +338,11 @@ uint32_t Ports_ReadAddress(void)
 
 uint32_t Ports_ReadData(void)
 {
-	uint32_t result = (uint32_t)MCP23S17_ReadPins();
+	uint32_t result = (uint32_t)MCP23S17_ReadPins() << 16;
 
 	// Grab the other two bytes...
-	result |= (((uint32_t)PINE) << 16);
-	result |= (((uint32_t)PINF) << 24);
+	result |= (((uint32_t)PINE) << 8);
+	result |= (((uint32_t)PINF) << 0);
 
 	return result;
 }
