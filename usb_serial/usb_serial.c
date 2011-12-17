@@ -52,7 +52,7 @@ typedef enum ProgrammerCommandState
 	ReadingByteWaitingForAddress,
 	ReadingChips,
 	ReadingChipsUnableSendError,
-	WritingChips,
+	WritingChips
 } ProgrammerCommandState;
 
 typedef enum ProgrammerCommand
@@ -63,20 +63,20 @@ typedef enum ProgrammerCommand
 	ReadByte,
 	ReadChips,
 	EraseChips,
-	WriteChips,
+	WriteChips
 } ProgrammerCommand;
 
 typedef enum ProgrammerReply
 {
 	CommandReplyOK,
 	CommandReplyError,
-	CommandReplyInvalid,
+	CommandReplyInvalid
 } ProgrammerReply;
 
 typedef enum ComputerReadReply
 {
 	ComputerReadOK,
-	ComputerReadCancel,
+	ComputerReadCancel
 } ComputerReadReply;
 
 typedef enum ProgrammerReadReply
@@ -85,22 +85,22 @@ typedef enum ProgrammerReadReply
 	ProgrammerReadError,
 	ProgrammerReadMoreData,
 	ProgrammerReadFinished,
-	ProgrammerReadConfirmCancel,
+	ProgrammerReadConfirmCancel
 } ProgrammerReadReply;
 
 typedef enum ComputerWriteReply
 {
 	ComputerWriteMore,
 	ComputerWriteFinish,
-	ComputerWriteCancel,
+	ComputerWriteCancel
 } ComputerWriteReply;
 
 typedef enum ProgrammerWriteReply
 {
 	ProgrammerWriteOK,
 	ProgrammerWriteError,
-	ProgrammerWriteConfirmCancel,
-};
+	ProgrammerWriteConfirmCancel
+} ProgrammerWriteReply;
 
 static ProgrammerCommandState curCommandState = WaitingForCommand;
 static uint8_t byteAddressReceiveCount = 0;
@@ -274,7 +274,7 @@ void USBSerial_HandleReadingChipsByte(uint8_t byte)
 	switch (byte)
 	{
 	case ComputerReadOK:
-		if (curReadIndex >= (CHIP_SIZE / READ_CHUNK_SIZE_BYTES))
+		if (curReadIndex >= (CHIP_SIZE / (READ_CHUNK_SIZE_BYTES/4)))
 		{
 			SendByte(ProgrammerReadFinished);
 			curCommandState = WaitingForCommand;
@@ -330,7 +330,7 @@ void USBSerial_HandleWritingChipsByte(uint8_t byte)
 		{
 		case ComputerWriteMore:
 			writePosInChunk = 0;
-			if (curWriteIndex < CHIP_SIZE / WRITE_CHUNK_SIZE_BYTES)
+			if (curWriteIndex < CHIP_SIZE / (WRITE_CHUNK_SIZE_BYTES/4))
 			{
 				SendByte(ProgrammerWriteOK);
 			}
