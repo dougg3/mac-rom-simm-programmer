@@ -52,6 +52,7 @@ static bool MCP23S17_Inited = false;
 // Private functions
 void MCP23S17_WriteBothRegs(uint8_t addrA, uint16_t value);
 uint16_t MCP23S17_ReadBothRegs(uint8_t addrA);
+uint8_t MCP23S17_ByteRW(uint8_t b);
 
 void MCP23S17_Init()
 {
@@ -142,6 +143,13 @@ uint16_t MCP23S17_GetPullups(void)
 	return MCP23S17_ReadBothRegs(MCP23S17_GPPUA);
 }
 
+uint8_t MCP23S17_ByteRW(uint8_t b)
+{
+	SPDR = b;
+	while ((SPSR & (1 << SPIF)) == 0);
+	return SPDR;
+}
+
 void MCP23S17_WriteBothRegs(uint8_t addrA, uint16_t value)
 {
 	// addrA should contain the address of the "A" register.
@@ -149,29 +157,17 @@ void MCP23S17_WriteBothRegs(uint8_t addrA, uint16_t value)
 
 	ASSERT_CS();
 
-	// Just a temporary variable so we read
-	// the returned byte from the SPI transfer
-	volatile uint8_t tmp;
-
 	// Start off the communication by telling the MCP23S17 that we are writing to a register
-	SPDR = MCP23S17_CONTROL_WRITE(0);
-	while ((SPSR & (1 << SPIF)) == 0);
-	tmp = SPDR;
+	MCP23S17_ByteRW(MCP23S17_CONTROL_WRITE(0));
 
 	// Tell it the first register we're writing to (the "A" register)
-	SPDR = addrA;
-	while ((SPSR & (1 << SPIF)) == 0);
-	tmp = SPDR;
+	MCP23S17_ByteRW(addrA);
 
 	// Write the first byte of the register
-	SPDR = (uint8_t)((value >> 8) & 0xFF);
-	while ((SPSR & (1 << SPIF)) == 0);
-	tmp = SPDR;
+	MCP23S17_ByteRW((uint8_t)((value >> 8) & 0xFF));
 
 	// It should auto-increment to the "B" register, now write that
-	SPDR = (uint8_t)(value & 0xFF);
-	while ((SPSR & (1 << SPIF)) == 0);
-	tmp = SPDR;
+	MCP23S17_ByteRW((uint8_t)(value & 0xFF));
 
 	DEASSERT_CS();
 }
@@ -182,29 +178,17 @@ uint16_t MCP23S17_ReadBothRegs(uint8_t addrA)
 
 	ASSERT_CS();
 
-	// Just a temporary variable so we read
-	// the returned byte from the SPI transfer
-	volatile uint8_t tmp;
-
 	// Start off the communication by telling the MCP23S17 that we are reading from a register
-	SPDR = MCP23S17_CONTROL_READ(0);
-	while ((SPSR & (1 << SPIF)) == 0);
-	tmp = SPDR;
+	MCP23S17_ByteRW(MCP23S17_CONTROL_READ(0));
 
 	// Tell it which register we're reading from (the "A" register)
-	SPDR = addrA;
-	while ((SPSR & (1 << SPIF)) == 0);
-	tmp = SPDR;
+	MCP23S17_ByteRW(addrA);
 
 	// Read the first byte of the register
-	SPDR = 0;
-	while ((SPSR & (1 << SPIF)) == 0);
-	returnVal = (((uint16_t)SPDR) << 8);
+	returnVal = (((uint16_t)MCP23S17_ByteRW(0)) << 8);
 
 	// It should auto-increment to the "B" register, now read that
-	SPDR = 0;
-	while ((SPSR & (1 << SPIF)) == 0);
-	returnVal |= SPDR;
+	returnVal |= MCP23S17_ByteRW(0);
 
 	DEASSERT_CS();
 
