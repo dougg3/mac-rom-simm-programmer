@@ -11,9 +11,14 @@
 #include "../external_mem.h"
 #include "../tests/simm_electrical_test.h"
 
+#define CHIP_SIZE					(512UL * 1024UL)
 #define READ_CHUNK_SIZE_BYTES		1024UL
+#define WRITE_CHUNK_SIZE_BYTES		1024UL
 #if ((READ_CHUNK_SIZE_BYTES % 4) != 0)
 #error Read chunk size should be a multiple of 4 bytes
+#endif
+#if ((WRITE_CHUNK_SIZE_BYTES % 4) != 0)
+#error Write chunk size should be a multiple of 4 bytes
 #endif
 
 USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface =
@@ -47,6 +52,7 @@ typedef enum ProgrammerCommandState
 	ReadingByteWaitingForAddress,
 	ReadingChips,
 	ReadingChipsUnableSendError,
+	WritingChips,
 } ProgrammerCommandState;
 
 typedef enum ProgrammerCommand
@@ -62,20 +68,58 @@ typedef enum ProgrammerCommand
 
 typedef enum ProgrammerReply
 {
-	ReplyOK,
-	ReplyError,
+	CommandReplyOK,
+	CommandReplyError,
+	CommandReplyInvalid,
 } ProgrammerReply;
+
+typedef enum ComputerReadReply
+{
+	ComputerReadOK,
+	ComputerReadCancel,
+} ComputerReadReply;
+
+typedef enum ProgrammerReadReply
+{
+	ProgrammerReadOK,
+	ProgrammerReadError,
+	ProgrammerReadMoreData,
+	ProgrammerReadFinished,
+	ProgrammerReadConfirmCancel,
+} ProgrammerReadReply;
+
+typedef enum ComputerWriteReply
+{
+	ComputerWriteMore,
+	ComputerWriteFinish,
+	ComputerWriteCancel,
+} ComputerWriteReply;
+
+typedef enum ProgrammerWriteReply
+{
+	ProgrammerWriteOK,
+	ProgrammerWriteError,
+	ProgrammerWriteConfirmCancel,
+};
 
 static ProgrammerCommandState curCommandState = WaitingForCommand;
 static uint8_t byteAddressReceiveCount = 0;
 static uint16_t curReadIndex;
+static int16_t writePosInChunk = -1;
+static uint16_t curWriteIndex = 0;
 
 void USBSerial_HandleWaitingForCommandByte(uint8_t byte);
+void USBSerial_HandleReadingChipsByte(uint8_t byte);
 void USBSerial_SendReadDataChunk(void);
+void USBSerial_HandleWritingChipsByte(uint8_t byte);
+
+#define SendByte(b) CDC_Device_SendByte(&VirtualSerial_CDC_Interface, b)
+#define ReadByte() CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface)
+#define SendData(d, l) CDC_Device_SendData(&VirtualSerial_CDC_Interface, d, l)
 
 void USBSerial_Check(void)
 {
-	if (USB_DeviceState == DEVICE_STATE_Configured)
+	/*if (USB_DeviceState == DEVICE_STATE_Configured)
 	{
 		if (CDC_Device_BytesReceived(&VirtualSerial_CDC_Interface))
 		{
@@ -150,12 +194,12 @@ void USBSerial_Check(void)
 				CDC_Device_SendString(&VirtualSerial_CDC_Interface, "Finished\r\n");
 			}
 		}
-	}
+	}*/
 
-	/*if (USB_DeviceState == DEVICE_STATE_Configured)
+	if (USB_DeviceState == DEVICE_STATE_Configured)
 	{
 		// Check for commands, etc...
-		int16_t recvByte = CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
+		int16_t recvByte = ReadByte();
 
 		if (recvByte >= 0)
 		{
@@ -164,9 +208,15 @@ void USBSerial_Check(void)
 			case WaitingForCommand:
 				USBSerial_HandleWaitingForCommandByte((uint8_t)recvByte);
 				break;
+			case ReadingChips:
+				USBSerial_HandleReadingChipsByte((uint8_t)recvByte);
+				break;
+			case WritingChips:
+				USBSerial_HandleWritingChipsByte((uint8_t)recvByte);
+				break;
 			}
 		}
-	}*/
+	}
 
 	CDC_Device_USBTask(&VirtualSerial_CDC_Interface);
 	USB_USBTask();
@@ -180,14 +230,14 @@ void USBSerial_HandleWaitingForCommandByte(uint8_t byte)
 		curCommandState = WaitingForCommand;
 		break;
 	case DoElectricalTest:
-		CDC_Device_SendByte(&VirtualSerial_CDC_Interface, ReplyOK);
+		SendByte(CommandReplyOK);
 		SIMMElectricalTest_Run();
 		curCommandState = WaitingForCommand;
 		break;
 	case IdentifyChips:
 	{
 		struct ChipID chips[4];
-		CDC_Device_SendByte(&VirtualSerial_CDC_Interface, ReplyOK);
+		SendByte(CommandReplyOK);
 		ExternalMem_IdentifyChips(chips);
 		// TODO: Send chip ID info back to receiver
 		break;
@@ -195,16 +245,49 @@ void USBSerial_HandleWaitingForCommandByte(uint8_t byte)
 	case ReadByte:
 		curCommandState = ReadingByteWaitingForAddress;
 		byteAddressReceiveCount = 0;
-		CDC_Device_SendByte(&VirtualSerial_CDC_Interface, ReplyOK);
+		SendByte(CommandReplyOK);
 		break;
 	case ReadChips:
 		curCommandState = ReadingChips;
 		curReadIndex = 0;
-		CDC_Device_SendByte(&VirtualSerial_CDC_Interface, ReplyOK);
+		SendByte(CommandReplyOK);
 		USBSerial_SendReadDataChunk();
 		break;
 	case EraseChips:
+		ExternalMem_EraseChips(ALL_CHIPS);
+		SendByte(CommandReplyOK);
+		break;
 	case WriteChips:
+		curCommandState = WritingChips;
+		curWriteIndex = 0;
+		writePosInChunk = -1;
+		SendByte(CommandReplyOK);
+		break;
+	default:
+		SendByte(CommandReplyInvalid);
+		break;
+	}
+}
+
+void USBSerial_HandleReadingChipsByte(uint8_t byte)
+{
+	switch (byte)
+	{
+	case ComputerReadOK:
+		if (curReadIndex >= (CHIP_SIZE / READ_CHUNK_SIZE_BYTES))
+		{
+			SendByte(ProgrammerReadFinished);
+			curCommandState = WaitingForCommand;
+		}
+		else
+		{
+			SendByte(ProgrammerReadMoreData);
+			USBSerial_SendReadDataChunk();
+		}
+		break;
+	case ComputerReadCancel:
+		SendByte(ProgrammerReadConfirmCancel);
+		curCommandState = WaitingForCommand;
 		break;
 	}
 }
@@ -222,7 +305,7 @@ void USBSerial_SendReadDataChunk(void)
 	} chunks;
 
 	ExternalMem_Read(curReadIndex * (READ_CHUNK_SIZE_BYTES/4), chunks.readChunks, READ_CHUNK_SIZE_BYTES/4);
-	uint8_t retVal = CDC_Device_SendData(&VirtualSerial_CDC_Interface, (const char *)chunks.readChunkBytes, READ_CHUNK_SIZE_BYTES);
+	uint8_t retVal = SendData((const char *)chunks.readChunkBytes, READ_CHUNK_SIZE_BYTES);
 	if (retVal != ENDPOINT_RWSTREAM_NoError)
 	{
 		curCommandState = ReadingChipsUnableSendError;
@@ -230,6 +313,54 @@ void USBSerial_SendReadDataChunk(void)
 	else
 	{
 		curReadIndex++;
+	}
+}
+
+void USBSerial_HandleWritingChipsByte(uint8_t byte)
+{
+	static union
+	{
+		uint32_t writeChunks[WRITE_CHUNK_SIZE_BYTES / 4];
+		uint8_t writeChunkBytes[WRITE_CHUNK_SIZE_BYTES];
+	} chunks;
+
+	if (writePosInChunk == -1)
+	{
+		switch (byte)
+		{
+		case ComputerWriteMore:
+			writePosInChunk = 0;
+			if (curWriteIndex < CHIP_SIZE / WRITE_CHUNK_SIZE_BYTES)
+			{
+				SendByte(ProgrammerWriteOK);
+			}
+			else
+			{
+				SendByte(ProgrammerWriteError);
+			}
+			break;
+		case ComputerWriteFinish:
+			// Just to confirm that we finished writing...
+			SendByte(ProgrammerWriteOK);
+			curCommandState = WaitingForCommand;
+			break;
+		case ComputerWriteCancel:
+			SendByte(ProgrammerWriteConfirmCancel);
+			curCommandState = WaitingForCommand;
+			break;
+		}
+	}
+	else
+	{
+		chunks.writeChunkBytes[writePosInChunk++] = byte;
+		if (writePosInChunk >= WRITE_CHUNK_SIZE_BYTES)
+		{
+			// Write this data
+			ExternalMem_Write(curWriteIndex * (WRITE_CHUNK_SIZE_BYTES/4), chunks.writeChunks, WRITE_CHUNK_SIZE_BYTES/4, ALL_CHIPS);
+			SendByte(ProgrammerWriteOK);
+			curWriteIndex++;
+			writePosInChunk = -1;
+		}
 	}
 }
 
