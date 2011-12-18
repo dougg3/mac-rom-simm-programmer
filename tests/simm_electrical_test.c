@@ -135,6 +135,11 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 	// Now, check each individual line vs. all other lines on the SIMM for any shorts between them
 	ElectricalTestStage curStage = TestingAddressLines;
 	int x = 0;
+	// This is a counter we do once per pin. I use it to do a "triangle" algorithm so that I don't check
+	// every possible pair of pins twice. If I did, I would get two notifications for each short.
+	uint8_t pinsAlreadyChecked = 0;
+	uint8_t thisPin = 0;
+	uint8_t i;
 	while (curStage != DoneTesting)
 	{
 		// Set one pin to output a 0.
@@ -219,6 +224,11 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 
 		DelayMS(DELAY_SETTLE_TIME_MS);
 
+		// Now keep a count of how many pins we have actually checked.
+		// We will skip the first "pinsAlreadyChecked" pins each time so we don't get duplicates.
+		thisPin = 0;
+
+		// Read back the address data to see if any shorts were found
 		readback = Ports_ReadAddress();
 		if (curStage == TestingAddressLines)
 		{
@@ -226,17 +236,15 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 			readback |= (1UL << x);
 		}
 
-		// At this point, any errors will manifest as 0 bits. It's easier to test for errors by turning them
-		// into 1 bits, so invert the readback so shorted pins are 1s and non-shorted pins are 0s
-		readback = ~readback & SIMM_ADDRESS_PINS_MASK;
-
 		failIndex = FIRST_ADDRESS_LINE_FAIL_INDEX;
 
 		// Count any shorted pins
-		while (readback)
+		for (i = 0; i <= SIMM_HIGHEST_ADDRESS_LINE; i++)
 		{
 			// failure here?
-			if ((readback & 1) && !SIMMElectricalTest_IsGroundShort(failIndex))
+			if ((thisPin >= pinsAlreadyChecked) && // We haven't already checked this combination of pins...
+				!(readback & 1) && // It's showing as a short...
+				!SIMMElectricalTest_IsGroundShort(failIndex)) // And it's not a short to ground
 			{
 				errorHandler(testPinFailIndex, failIndex);
 				numErrors++;
@@ -244,6 +252,7 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 
 			readback >>= 1;
 			failIndex++;
+			thisPin++;
 		}
 
 		readback = Ports_ReadData();
@@ -253,16 +262,15 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 			readback |= (1UL << x);
 		}
 
-		// Again, invert readback so shorted pins are 1s and non-shorted pins are 0s
-		readback = ~readback;
-
 		failIndex = FIRST_DATA_LINE_FAIL_INDEX;
 
 		// Count any shorted pins
 		while (readback)
 		{
 			// failure here?
-			if ((readback & 1) && !SIMMElectricalTest_IsGroundShort(failIndex))
+			if ((thisPin >= pinsAlreadyChecked) && // We haven't already checked this combination of pins...
+				!(readback & 1) && // It's showing as a short...
+				!SIMMElectricalTest_IsGroundShort(failIndex)) // And it's not a short to ground
 			{
 				errorHandler(testPinFailIndex, failIndex);
 				numErrors++;
@@ -270,34 +278,44 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 
 			readback >>= 1;
 			failIndex++;
+			thisPin++;
 		}
 
 		if (curStage != TestingCS)
 		{
-			if (!Ports_ReadCS() && !SIMMElectricalTest_IsGroundShort(CS_FAIL_INDEX))
+			if ((thisPin >= pinsAlreadyChecked) &&
+				!Ports_ReadCS() &&
+				!SIMMElectricalTest_IsGroundShort(CS_FAIL_INDEX))
 			{
 				errorHandler(testPinFailIndex, CS_FAIL_INDEX);
 				numErrors++;
 			}
 		}
+		thisPin++;
 
 		if (curStage != TestingOE)
 		{
-			if (!Ports_ReadOE() && !SIMMElectricalTest_IsGroundShort(OE_FAIL_INDEX))
+			if ((thisPin >= pinsAlreadyChecked) &&
+				!Ports_ReadOE() &&
+				!SIMMElectricalTest_IsGroundShort(OE_FAIL_INDEX))
 			{
 				errorHandler(testPinFailIndex, OE_FAIL_INDEX);
 				numErrors++;
 			}
 		}
+		thisPin++;
 
 		if (curStage != TestingWE)
 		{
-			if (!Ports_ReadWE() && !SIMMElectricalTest_IsGroundShort(WE_FAIL_INDEX))
+			if ((thisPin >= pinsAlreadyChecked) &&
+				!Ports_ReadWE() &&
+				!SIMMElectricalTest_IsGroundShort(WE_FAIL_INDEX))
 			{
 				errorHandler(testPinFailIndex, WE_FAIL_INDEX);
 				numErrors++;
 			}
 		}
+		thisPin++;
 
 		// Finally, move on to the next stage if needed.
 		if (curStage == TestingAddressLines)
@@ -323,6 +341,9 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 		{
 			curStage++;
 		}
+
+		// Increase the number of pins we have actually checked...
+		pinsAlreadyChecked++;
 	}
 
 	return numErrors;
