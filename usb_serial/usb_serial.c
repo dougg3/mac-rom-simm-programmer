@@ -102,6 +102,17 @@ typedef enum ProgrammerWriteReply
 	ProgrammerWriteConfirmCancel
 } ProgrammerWriteReply;
 
+typedef enum ProgrammerIdentifyReply
+{
+	ProgrammerIdentifyDone
+} ProgrammerIdentifyReply;
+
+typedef enum ProgrammerElectricalTestReply
+{
+	ProgrammerElectricalTestFail,
+	ProgrammerElectricalTestDone
+};
+
 static ProgrammerCommandState curCommandState = WaitingForCommand;
 static uint8_t byteAddressReceiveCount = 0;
 static uint16_t curReadIndex;
@@ -112,6 +123,7 @@ void USBSerial_HandleWaitingForCommandByte(uint8_t byte);
 void USBSerial_HandleReadingChipsByte(uint8_t byte);
 void USBSerial_SendReadDataChunk(void);
 void USBSerial_HandleWritingChipsByte(uint8_t byte);
+void USBSerial_ElectricalTest_Fail_Handler(uint8_t index1, uint8_t index2);
 
 #define SendByte(b) CDC_Device_SendByte(&VirtualSerial_CDC_Interface, b)
 #define ReadByte() CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface)
@@ -231,7 +243,8 @@ void USBSerial_HandleWaitingForCommandByte(uint8_t byte)
 		break;
 	case DoElectricalTest:
 		SendByte(CommandReplyOK);
-		SIMMElectricalTest_Run();
+		SIMMElectricalTest_Run(USBSerial_ElectricalTest_Fail_Handler);
+		SendByte(ProgrammerElectricalTestDone);
 		curCommandState = WaitingForCommand;
 		break;
 	case IdentifyChips:
@@ -239,7 +252,13 @@ void USBSerial_HandleWaitingForCommandByte(uint8_t byte)
 		struct ChipID chips[4];
 		SendByte(CommandReplyOK);
 		ExternalMem_IdentifyChips(chips);
-		// TODO: Send chip ID info back to receiver
+		int x;
+		for (x = 0; x < 4; x++)
+		{
+			SendByte(chips[x].manufacturerID);
+			SendByte(chips[x].deviceID);
+		}
+		SendByte(ProgrammerIdentifyDone);
 		break;
 	}
 	case ReadByte:
@@ -363,6 +382,15 @@ void USBSerial_HandleWritingChipsByte(uint8_t byte)
 		}
 	}
 }
+
+void USBSerial_ElectricalTest_Fail_Handler(uint8_t index1, uint8_t index2)
+{
+	// Sends out a failure notice -- followed by indexes of the two shorted pins
+	SendByte(ProgrammerElectricalTestFail);
+	SendByte(index1);
+	SendByte(index2);
+}
+
 
 
 

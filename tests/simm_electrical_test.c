@@ -27,7 +27,10 @@ typedef enum ElectricalTestStage
 	DoneTesting
 } ElectricalTestStage;
 
-int SIMMElectricalTest_Run(void)
+// TODO: Remember which lines shorted to ground and don't repeat those errors as being
+// shorted to each other?
+
+int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 {
 	// Returns number of errors found
 	int numErrors = 0;
@@ -51,33 +54,66 @@ int SIMMElectricalTest_Run(void)
 
 	DelayMS(DELAY_SETTLE_TIME_MS);
 
-	if (Ports_ReadAddress() != SIMM_ADDRESS_PINS_MASK)
+	uint8_t testPinFailIndex;
+	uint8_t failIndex;
+	uint32_t readback = Ports_ReadAddress();
+	if (readback != SIMM_ADDRESS_PINS_MASK)
 	{
-		// TODO: Log all these errors somewhere?
-		numErrors++;
+		failIndex = FIRST_ADDRESS_LINE_FAIL_INDEX;
+
+		// At this point, any errors will manifest as 0 bits. It's easier to test for errors by turning them
+		// into 1 bits, so invert the readback -- now, shorted pins are 1s and non-shorted pins are 0s
+		readback = ~readback & SIMM_ADDRESS_PINS_MASK;
+
+		// As long as there are any 1 bits, there is a short detected.
+		while (readback)
+		{
+			if (readback & 1) // failure here?
+			{
+				errorHandler(failIndex, GROUND_FAIL_INDEX);
+			}
+
+			readback >>= 1;
+			failIndex++;
+			numErrors++;
+		}
 	}
 
-	if (Ports_ReadData() != SIMM_DATA_PINS_MASK)
+	readback = Ports_ReadData();
+	if (readback != SIMM_DATA_PINS_MASK)
 	{
-		// TODO: Log all these errors somewhere?
-		numErrors++;
+		failIndex = FIRST_DATA_LINE_FAIL_INDEX;
+
+		readback = ~readback;
+
+		while (readback)
+		{
+			if (readback & 1) // failure here?
+			{
+				errorHandler(failIndex, GROUND_FAIL_INDEX);
+			}
+
+			readback >>= 1;
+			failIndex++;
+			numErrors++;
+		}
 	}
 
 	if (!Ports_ReadCS())
 	{
-		// TODO: Log all these errors somewhere?
+		errorHandler(CS_FAIL_INDEX, GROUND_FAIL_INDEX);
 		numErrors++;
 	}
 
 	if (!Ports_ReadOE())
 	{
-		// TODO: Log all these errors somewhere?
+		errorHandler(OE_FAIL_INDEX, GROUND_FAIL_INDEX);
 		numErrors++;
 	}
 
 	if (!Ports_ReadWE())
 	{
-		// TODO: Log all these errors somewhere?
+		errorHandler(WE_FAIL_INDEX, GROUND_FAIL_INDEX);
 		numErrors++;
 	}
 
@@ -91,8 +127,12 @@ int SIMMElectricalTest_Run(void)
 		// Then read back all the other pins. If any of them read back as 0,
 		// it means they are shorted to the pin we set as an output.
 
+		// This is the fail index of the pin we are outputting a 0 on.
+		testPinFailIndex = 0;
+
 		if (curStage == TestingAddressLines)
 		{
+			testPinFailIndex = FIRST_ADDRESS_LINE_FAIL_INDEX + x; // fail index of this address line
 			uint32_t addressLineMask = (1UL << x); // mask of the address pin we're testing
 
 			Ports_SetAddressDDR(addressLineMask); // set it as an output and all other address pins as inputs
@@ -107,8 +147,10 @@ int SIMMElectricalTest_Run(void)
 			Ports_AddressPullups_RMW(SIMM_ADDRESS_PINS_MASK, SIMM_ADDRESS_PINS_MASK);
 		}
 
+
 		if (curStage == TestingDataLines)
 		{
+			testPinFailIndex = FIRST_DATA_LINE_FAIL_INDEX + x;
 			uint32_t dataLineMask = (1UL << x);
 			Ports_SetDataDDR(dataLineMask);
 			Ports_DataOut_RMW(0, dataLineMask);
@@ -122,6 +164,7 @@ int SIMMElectricalTest_Run(void)
 
 		if (curStage == TestingCS)
 		{
+			testPinFailIndex = CS_FAIL_INDEX;
 			Ports_SetCSDDR(true);
 			Ports_SetCSOut(false);
 		}
@@ -133,6 +176,7 @@ int SIMMElectricalTest_Run(void)
 
 		if (curStage == TestingOE)
 		{
+			testPinFailIndex = OE_FAIL_INDEX;
 			Ports_SetOEDDR(true);
 			Ports_SetOEOut(false);
 		}
@@ -144,6 +188,7 @@ int SIMMElectricalTest_Run(void)
 
 		if (curStage == TestingWE)
 		{
+			testPinFailIndex = WE_FAIL_INDEX;
 			Ports_SetWEDDR(true);
 			Ports_SetWEOut(false);
 		}
@@ -159,7 +204,7 @@ int SIMMElectricalTest_Run(void)
 
 		DelayMS(DELAY_SETTLE_TIME_MS);
 
-		uint32_t readback = Ports_ReadAddress();
+		readback = Ports_ReadAddress();
 		if (curStage == TestingAddressLines)
 		{
 			// Insert a high bit so our test doesn't fail on the pin we were testing
@@ -170,15 +215,19 @@ int SIMMElectricalTest_Run(void)
 		// into 1 bits, so invert the readback so shorted pins are 1s and non-shorted pins are 0s
 		readback = ~readback & SIMM_ADDRESS_PINS_MASK;
 
+		failIndex = FIRST_ADDRESS_LINE_FAIL_INDEX;
+
 		// Count any shorted pins
 		while (readback)
 		{
-			numErrors++;
+			if (readback & 1) // failure here?
+			{
+				errorHandler(testPinFailIndex, failIndex);
+			}
 
-			// The line below turns off the rightmost bit
-			// TODO: This will be useless unless I determine WHICH pin it is.
-			// But this makes a good placeholder for now.
-			readback = readback & (readback - 1);
+			readback >>= 1;
+			failIndex++;
+			numErrors++;
 		}
 
 		readback = Ports_ReadData();
@@ -191,24 +240,27 @@ int SIMMElectricalTest_Run(void)
 		// Again, invert readback so shorted pins are 1s and non-shorted pins are 0s
 		readback = ~readback;
 
+		failIndex = FIRST_DATA_LINE_FAIL_INDEX;
+
 		// Count any shorted pins
 		while (readback)
 		{
-			numErrors++;
+			if (readback & 1) // failure here?
+			{
+				errorHandler(testPinFailIndex, failIndex);
+			}
 
-			// The line below turns off the rightmost bit
-			// TODO: This will be useless unless I determine WHICH pin it is.
-			// But this makes a good placeholder for now.
-			readback = readback & (readback - 1);
+			readback >>= 1;
+			failIndex++;
+			numErrors++;
 		}
 
 		if (curStage != TestingCS)
 		{
 			if (!Ports_ReadCS())
 			{
+				errorHandler(testPinFailIndex, CS_FAIL_INDEX);
 				numErrors++;
-
-				// TODO: Report this error
 			}
 		}
 
@@ -216,9 +268,8 @@ int SIMMElectricalTest_Run(void)
 		{
 			if (!Ports_ReadOE())
 			{
+				errorHandler(testPinFailIndex, OE_FAIL_INDEX);
 				numErrors++;
-
-				// TODO: Report this error
 			}
 		}
 
@@ -226,9 +277,8 @@ int SIMMElectricalTest_Run(void)
 		{
 			if (!Ports_ReadWE())
 			{
+				errorHandler(testPinFailIndex, WE_FAIL_INDEX);
 				numErrors++;
-
-				// TODO: Report this error
 			}
 		}
 
