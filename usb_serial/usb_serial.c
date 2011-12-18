@@ -111,7 +111,7 @@ typedef enum ProgrammerElectricalTestReply
 {
 	ProgrammerElectricalTestFail,
 	ProgrammerElectricalTestDone
-};
+} ProgrammerElectricalTestReply;
 
 static ProgrammerCommandState curCommandState = WaitingForCommand;
 static uint8_t byteAddressReceiveCount = 0;

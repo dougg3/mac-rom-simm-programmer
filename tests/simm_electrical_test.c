@@ -27,13 +27,19 @@ typedef enum ElectricalTestStage
 	DoneTesting
 } ElectricalTestStage;
 
-// TODO: Remember which lines shorted to ground and don't repeat those errors as being
-// shorted to each other?
+// Private functions
+void SIMMElectricalTest_ResetGroundShorts(void);
+void SIMMElectricalTest_AddGroundShort(uint8_t index);
+bool SIMMElectricalTest_IsGroundShort(uint8_t index);
 
 int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 {
 	// Returns number of errors found
 	int numErrors = 0;
+
+	// Pins we have determined are shorted to ground
+	// (We have to ignore them during the second phase of the test)
+	SIMMElectricalTest_ResetGroundShorts();
 
 	Ports_Init();
 
@@ -71,6 +77,7 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 			if (readback & 1) // failure here?
 			{
 				errorHandler(failIndex, GROUND_FAIL_INDEX);
+				SIMMElectricalTest_AddGroundShort(failIndex);
 				numErrors++;
 			}
 
@@ -91,6 +98,7 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 			if (readback & 1) // failure here?
 			{
 				errorHandler(failIndex, GROUND_FAIL_INDEX);
+				SIMMElectricalTest_AddGroundShort(failIndex);
 				numErrors++;
 			}
 
@@ -102,20 +110,27 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 	if (!Ports_ReadCS())
 	{
 		errorHandler(CS_FAIL_INDEX, GROUND_FAIL_INDEX);
+		SIMMElectricalTest_AddGroundShort(CS_FAIL_INDEX);
 		numErrors++;
 	}
 
 	if (!Ports_ReadOE())
 	{
 		errorHandler(OE_FAIL_INDEX, GROUND_FAIL_INDEX);
+		SIMMElectricalTest_AddGroundShort(OE_FAIL_INDEX);
 		numErrors++;
 	}
 
 	if (!Ports_ReadWE())
 	{
 		errorHandler(WE_FAIL_INDEX, GROUND_FAIL_INDEX);
+		SIMMElectricalTest_AddGroundShort(WE_FAIL_INDEX);
 		numErrors++;
 	}
+
+	// OK, now we know which lines are shorted to ground.
+	// We need to keep that in mind, because those lines will now show as shorted
+	// to ALL other lines...ignore them during tests to find other independent shorts
 
 	// Now, check each individual line vs. all other lines on the SIMM for any shorts between them
 	ElectricalTestStage curStage = TestingAddressLines;
@@ -128,7 +143,7 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 		// it means they are shorted to the pin we set as an output.
 
 		// This is the fail index of the pin we are outputting a 0 on.
-		testPinFailIndex = 0;
+		testPinFailIndex = 0xFE; // Start with a default invalid value...will be replaced though.
 
 		if (curStage == TestingAddressLines)
 		{
@@ -137,7 +152,7 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 
 			Ports_SetAddressDDR(addressLineMask); // set it as an output and all other address pins as inputs
 			Ports_AddressOut_RMW(0, addressLineMask); // set the output pin to output "0" without affecting the input pins
-			Ports_AddressPullups_RMW(~addressLineMask, SIMM_ADDRESS_PINS_MASK); // turn on the pullups on all input pins
+			Ports_AddressPullups_RMW(SIMM_ADDRESS_PINS_MASK, ~addressLineMask); // turn on the pullups on all input pins
 		}
 		else
 		{
@@ -154,7 +169,7 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 			uint32_t dataLineMask = (1UL << x);
 			Ports_SetDataDDR(dataLineMask);
 			Ports_DataOut_RMW(0, dataLineMask);
-			Ports_DataPullups_RMW(~dataLineMask, SIMM_DATA_PINS_MASK);
+			Ports_DataPullups_RMW(SIMM_DATA_PINS_MASK, ~dataLineMask);
 		}
 		else
 		{
@@ -220,7 +235,8 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 		// Count any shorted pins
 		while (readback)
 		{
-			if (readback & 1) // failure here?
+			// failure here?
+			if ((readback & 1) && !SIMMElectricalTest_IsGroundShort(failIndex))
 			{
 				errorHandler(testPinFailIndex, failIndex);
 				numErrors++;
@@ -245,7 +261,8 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 		// Count any shorted pins
 		while (readback)
 		{
-			if (readback & 1) // failure here?
+			// failure here?
+			if ((readback & 1) && !SIMMElectricalTest_IsGroundShort(failIndex))
 			{
 				errorHandler(testPinFailIndex, failIndex);
 				numErrors++;
@@ -257,7 +274,7 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 
 		if (curStage != TestingCS)
 		{
-			if (!Ports_ReadCS())
+			if (!Ports_ReadCS() && !SIMMElectricalTest_IsGroundShort(CS_FAIL_INDEX))
 			{
 				errorHandler(testPinFailIndex, CS_FAIL_INDEX);
 				numErrors++;
@@ -266,7 +283,7 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 
 		if (curStage != TestingOE)
 		{
-			if (!Ports_ReadOE())
+			if (!Ports_ReadOE() && !SIMMElectricalTest_IsGroundShort(OE_FAIL_INDEX))
 			{
 				errorHandler(testPinFailIndex, OE_FAIL_INDEX);
 				numErrors++;
@@ -275,7 +292,7 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 
 		if (curStage != TestingWE)
 		{
-			if (!Ports_ReadWE())
+			if (!Ports_ReadWE() && !SIMMElectricalTest_IsGroundShort(WE_FAIL_INDEX))
 			{
 				errorHandler(testPinFailIndex, WE_FAIL_INDEX);
 				numErrors++;
@@ -309,4 +326,44 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 	}
 
 	return numErrors;
+}
+
+// Stuff for handling shorts to ground
+// (They have to be remembered because the ground shorts will be repeated
+// when you test each individual pin against all other pins)
+static uint32_t groundShorts[2];
+
+void SIMMElectricalTest_ResetGroundShorts(void)
+{
+	groundShorts[0] = 0;
+	groundShorts[1] = 0;
+}
+
+void SIMMElectricalTest_AddGroundShort(uint8_t index)
+{
+	if (index < 32)
+	{
+		groundShorts[0] |= (1UL << index);
+	}
+	else if (index < 64)
+	{
+		groundShorts[1] |= (1UL << (index - 32));
+	}
+	// None are >= 64, no further handling needed
+}
+
+bool SIMMElectricalTest_IsGroundShort(uint8_t index)
+{
+	if (index < 32)
+	{
+		return ((groundShorts[0] & (1UL << index)) != 0);
+	}
+	else if (index < 64)
+	{
+		return ((groundShorts[1] & (1UL << (index - 32))) != 0);
+	}
+	else
+	{
+		return false;
+	}
 }
