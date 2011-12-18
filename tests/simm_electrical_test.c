@@ -71,11 +71,11 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 			if (readback & 1) // failure here?
 			{
 				errorHandler(failIndex, GROUND_FAIL_INDEX);
+				numErrors++;
 			}
 
 			readback >>= 1;
 			failIndex++;
-			numErrors++;
 		}
 	}
 
@@ -91,11 +91,11 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 			if (readback & 1) // failure here?
 			{
 				errorHandler(failIndex, GROUND_FAIL_INDEX);
+				numErrors++;
 			}
 
 			readback >>= 1;
 			failIndex++;
-			numErrors++;
 		}
 	}
 
@@ -223,11 +223,11 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 			if (readback & 1) // failure here?
 			{
 				errorHandler(testPinFailIndex, failIndex);
+				numErrors++;
 			}
 
 			readback >>= 1;
 			failIndex++;
-			numErrors++;
 		}
 
 		readback = Ports_ReadData();
@@ -248,11 +248,11 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 			if (readback & 1) // failure here?
 			{
 				errorHandler(testPinFailIndex, failIndex);
+				numErrors++;
 			}
 
 			readback >>= 1;
 			failIndex++;
-			numErrors++;
 		}
 
 		if (curStage != TestingCS)
