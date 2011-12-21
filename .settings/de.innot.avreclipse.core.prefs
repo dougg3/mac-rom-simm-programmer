@@ -1,4 +1,4 @@
-#Tue Dec 13 21:30:45 PST 2011
+#Tue Dec 20 21:48:25 PST 2011
 avrtarget/ClockFrequency=16000000
 avrtarget/ExtRAMSize=0
 avrtarget/ExtendedRAM=false
@@ -11,7 +11,7 @@ avrtarget/avrdude/EEPROMFile=
 avrtarget/avrdude/EEPROMFromConfig=true
 avrtarget/avrdude/FlashFile=
 avrtarget/avrdude/FlashFromConfig=true
-avrtarget/avrdude/Fuses/ByteValues=223\:211\:248
+avrtarget/avrdude/Fuses/ByteValues=223\:208\:248
 avrtarget/avrdude/Fuses/FileName=
 avrtarget/avrdude/Fuses/MCUid=at90usb646
 avrtarget/avrdude/Fuses/UseFile=false
