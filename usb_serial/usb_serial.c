@@ -63,25 +63,34 @@ typedef enum ProgrammerCommand
 	ReadByte,
 	ReadChips,
 	EraseChips,
-	WriteChips
+	WriteChips,
+	GetBootloaderState,
+	EnterBootloader,
+	EnterProgrammer
 } ProgrammerCommand;
 
 typedef enum ProgrammerReply
 {
-	CommandReplyOK,
+	CommandReplyOK = 0,
 	CommandReplyError,
 	CommandReplyInvalid
 } ProgrammerReply;
 
+typedef enum BootloaderStateReply
+{
+	BootloaderStateInBootloader = 0,
+	BootloaderStateInProgrammer
+} BootloaderStateReply;
+
 typedef enum ComputerReadReply
 {
-	ComputerReadOK,
+	ComputerReadOK = 0,
 	ComputerReadCancel
 } ComputerReadReply;
 
 typedef enum ProgrammerReadReply
 {
-	ProgrammerReadOK,
+	ProgrammerReadOK = 0,
 	ProgrammerReadError,
 	ProgrammerReadMoreData,
 	ProgrammerReadFinished,
@@ -90,26 +99,26 @@ typedef enum ProgrammerReadReply
 
 typedef enum ComputerWriteReply
 {
-	ComputerWriteMore,
+	ComputerWriteMore = 0,
 	ComputerWriteFinish,
 	ComputerWriteCancel
 } ComputerWriteReply;
 
 typedef enum ProgrammerWriteReply
 {
-	ProgrammerWriteOK,
+	ProgrammerWriteOK = 0,
 	ProgrammerWriteError,
 	ProgrammerWriteConfirmCancel
 } ProgrammerWriteReply;
 
 typedef enum ProgrammerIdentifyReply
 {
-	ProgrammerIdentifyDone
+	ProgrammerIdentifyDone = 0
 } ProgrammerIdentifyReply;
 
 typedef enum ProgrammerElectricalTestReply
 {
-	ProgrammerElectricalTestFail,
+	ProgrammerElectricalTestFail = 0,
 	ProgrammerElectricalTestDone
 } ProgrammerElectricalTestReply;
 
@@ -280,6 +289,27 @@ void USBSerial_HandleWaitingForCommandByte(uint8_t byte)
 		curCommandState = WritingChips;
 		curWriteIndex = 0;
 		writePosInChunk = -1;
+		SendByte(CommandReplyOK);
+		break;
+	case GetBootloaderState:
+		SendByte(CommandReplyOK);
+		SendByte(BootloaderStateInProgrammer);
+		break;
+	case EnterBootloader:
+		SendByte(CommandReplyOK);
+		USB_Disable();
+
+		// Disable interrupts...
+		cli();
+
+		// Wait a little bit to let everything settle and let the program close the port after the USB disconnect
+		_delay_ms(2000);
+
+		// Now run the bootloader
+		__asm__ __volatile__ ( "jmp 0xE000" );
+		break;
+	case EnterProgrammer:
+		// Already in the programmer
 		SendByte(CommandReplyOK);
 		break;
 	default:
