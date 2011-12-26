@@ -7,7 +7,7 @@
 
 #include "usb_serial.h"
 #include "../LUFA/Drivers/USB/USB.h"
-#include "../Descriptors.h"
+#include "../cdc_device_definition.h"
 #include "../external_mem.h"
 #include "../tests/simm_electrical_test.h"
 #include "../programmer_protocol.h"
@@ -21,26 +21,6 @@
 #if ((WRITE_CHUNK_SIZE_BYTES % 4) != 0)
 #error Write chunk size should be a multiple of 4 bytes
 #endif
-
-USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface =
-{
-	.Config =
-		{
-			.ControlInterfaceNumber         = 0,
-
-			.DataINEndpointNumber           = CDC_TX_EPNUM,
-			.DataINEndpointSize             = CDC_TXRX_EPSIZE,
-			.DataINEndpointDoubleBank       = true,
-
-			.DataOUTEndpointNumber          = CDC_RX_EPNUM,
-			.DataOUTEndpointSize            = CDC_TXRX_EPSIZE,
-			.DataOUTEndpointDoubleBank      = true,
-
-			.NotificationEndpointNumber     = CDC_NOTIFICATION_EPNUM,
-			.NotificationEndpointSize       = CDC_NOTIFICATION_EPSIZE,
-			.NotificationEndpointDoubleBank = false,
-		},
-};
 
 void USBSerial_Init(void)
 {
