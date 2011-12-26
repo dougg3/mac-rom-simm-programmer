@@ -10,6 +10,7 @@
 #include "../Descriptors.h"
 #include "../external_mem.h"
 #include "../tests/simm_electrical_test.h"
+#include "../programmer_protocol.h"
 
 #define CHIP_SIZE					(512UL * 1024UL)
 #define READ_CHUNK_SIZE_BYTES		1024UL
@@ -54,73 +55,6 @@ typedef enum ProgrammerCommandState
 	ReadingChipsUnableSendError,
 	WritingChips
 } ProgrammerCommandState;
-
-typedef enum ProgrammerCommand
-{
-	EnterWaitingMode = 0,
-	DoElectricalTest,
-	IdentifyChips,
-	ReadByte,
-	ReadChips,
-	EraseChips,
-	WriteChips,
-	GetBootloaderState,
-	EnterBootloader,
-	EnterProgrammer
-} ProgrammerCommand;
-
-typedef enum ProgrammerReply
-{
-	CommandReplyOK = 0,
-	CommandReplyError,
-	CommandReplyInvalid
-} ProgrammerReply;
-
-typedef enum BootloaderStateReply
-{
-	BootloaderStateInBootloader = 0,
-	BootloaderStateInProgrammer
-} BootloaderStateReply;
-
-typedef enum ComputerReadReply
-{
-	ComputerReadOK = 0,
-	ComputerReadCancel
-} ComputerReadReply;
-
-typedef enum ProgrammerReadReply
-{
-	ProgrammerReadOK = 0,
-	ProgrammerReadError,
-	ProgrammerReadMoreData,
-	ProgrammerReadFinished,
-	ProgrammerReadConfirmCancel
-} ProgrammerReadReply;
-
-typedef enum ComputerWriteReply
-{
-	ComputerWriteMore = 0,
-	ComputerWriteFinish,
-	ComputerWriteCancel
-} ComputerWriteReply;
-
-typedef enum ProgrammerWriteReply
-{
-	ProgrammerWriteOK = 0,
-	ProgrammerWriteError,
-	ProgrammerWriteConfirmCancel
-} ProgrammerWriteReply;
-
-typedef enum ProgrammerIdentifyReply
-{
-	ProgrammerIdentifyDone = 0
-} ProgrammerIdentifyReply;
-
-typedef enum ProgrammerElectricalTestReply
-{
-	ProgrammerElectricalTestFail = 0,
-	ProgrammerElectricalTestDone
-} ProgrammerElectricalTestReply;
 
 static ProgrammerCommandState curCommandState = WaitingForCommand;
 static uint8_t byteAddressReceiveCount = 0;
@@ -248,6 +182,7 @@ void USBSerial_HandleWaitingForCommandByte(uint8_t byte)
 	switch (byte)
 	{
 	case EnterWaitingMode:
+		SendByte(CommandReplyOK);
 		curCommandState = WaitingForCommand;
 		break;
 	case DoElectricalTest:
