@@ -115,4 +115,23 @@ typedef enum BootloaderStateReply
 	BootloaderStateInProgrammer
 } BootloaderStateReply;
 
+// -------------------------  BOOTLOADER ERASE/WRITE PROTOCOL  -------------------------
+// If the command is BootloaderEraseAndWriteProgram, it will reply with CommandReplyOK
+// followed by either BootloaderEraseOK or BootloaderEraseError. At this point
+// the program can ask to write more data or finish or cancel, and then the appropriate
+// reply will be sent back to it. Works very similar to the write protocol.
+typedef enum ProgrammerBootloaderEraseWriteReply
+{
+	BootloaderWriteOK,
+	BootloaderWriteError,
+	BootloaderWriteConfirmCancel
+} ProgrammerBootloaderEraseWriteReply;
+
+typedef enum ComputerBootloaderEraseWriteRequest
+{
+	ComputerBootloaderWriteMore = 0,
+	ComputerBootloaderFinish,
+	ComputerBootloaderCancel
+} ComputerBootloaderEraseWriteRequest;
+
 #endif /* PROGRAMMER_PROTOCOL_H_ */
