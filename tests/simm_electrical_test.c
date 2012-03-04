@@ -334,6 +334,44 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 		testPin++;
 	}
 
+	// Restore to a normal state. Disable any pull-ups, return CS/OE/WE to outputs,
+	// deassert them all, set data as an input, set address as an input,
+	// assert CS and OE. Should be a pretty normal state.
+
+	// To start, make everything an input so we can disable pullups.
+	Ports_SetCSDDR(false);
+	Ports_SetOEDDR(false);
+	Ports_SetWEDDR(false);
+	Ports_SetAddressDDR(0);
+	Ports_SetDataDDR(0);
+
+	// Disable pullups
+
+	Ports_SetCSPullup(false);
+	Ports_SetOEPullup(false);
+	Ports_SetWEPullup(false);
+	Ports_AddressPullups_RMW(0, SIMM_ADDRESS_PINS_MASK);
+	Ports_DataPullups_RMW(0, SIMM_DATA_PINS_MASK);
+
+	// Set control lines to deasserted outputs (remember ON is deasserted)
+	Ports_SetCSDDR(true);
+	Ports_SetOEDDR(true);
+	Ports_SetWEDDR(true);
+	Ports_SetCSOut(true);
+	Ports_SetOEOut(true);
+	Ports_SetWEOut(true);
+
+	// Set address lines to outputs and set the outputted address to zero
+	Ports_SetAddressDDR(SIMM_ADDRESS_PINS_MASK);
+	Ports_SetAddressOut(0);
+
+	// Leave data lines as inputs...(they're already inputs so do nothing...)
+
+	// Now assert CS and OE so we're in normal "read" mode
+	Ports_SetCSOut(false);
+	Ports_SetOEOut(false);
+
+	// Now that the final state is restored, return the number of errors found
 	return numErrors;
 }
 

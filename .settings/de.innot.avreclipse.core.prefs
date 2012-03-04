@@ -1,4 +1,4 @@
-#Sat Dec 24 19:28:57 PST 2011
+#Sat Mar 03 13:46:14 PST 2012
 avrtarget/ClockFrequency=16000000
 avrtarget/ExtRAMSize=0
 avrtarget/ExtendedRAM=false
@@ -21,7 +21,7 @@ avrtarget/avrdude/Locks/FileName=
 avrtarget/avrdude/Locks/MCUid=at90usb646
 avrtarget/avrdude/Locks/UseFile=false
 avrtarget/avrdude/Locks/Write=false
-avrtarget/avrdude/NoChipErase=true
+avrtarget/avrdude/NoChipErase=false
 avrtarget/avrdude/NoSigCheck=false
 avrtarget/avrdude/NoVerify=false
 avrtarget/avrdude/NoWrite=false
