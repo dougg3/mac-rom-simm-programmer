@@ -103,6 +103,9 @@ void USBSerial_HandleWaitingForCommandByte(uint8_t byte)
 	// sending whatever replies necessary
 	case DoElectricalTest:
 		SendByte(CommandReplyOK);
+		// Force LUFA to send initial "OK" reply immediately in this case
+		// so the caller gets immediate feedback that the test has started
+		CDC_Device_Flush(&VirtualSerial_CDC_Interface);
 		SIMMElectricalTest_Run(USBSerial_ElectricalTest_Fail_Handler);
 		SendByte(ProgrammerElectricalTestDone);
 		curCommandState = WaitingForCommand;
