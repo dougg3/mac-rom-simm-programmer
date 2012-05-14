@@ -10,6 +10,9 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "ports.h"
+
+#define NUM_CHIPS		4
 
 // Holds info about the chip (retrieved with JEDEC standards)
 struct ChipID
@@ -24,14 +27,6 @@ struct ChipID
 #define IC3				(1 << 1)
 #define IC4				(1 << 0)
 #define ALL_CHIPS		(IC1 | IC2 | IC3 | IC4)
-
-// I feel kind of sick making these available to the outside world, but
-// I'm doing it for efficiency.
-// These are the bits on port B corresponding to the control signals.
-// Pass them to ExternalMem_Assert() or ExternalMem_Deassert().
-#define SIMM_WE		(1 << 6)
-#define SIMM_OE		(1 << 5)
-#define SIMM_CS		(1 << 4)
 
 // Initializes the (bit-banged) external memory interface
 void ExternalMem_Init(void);
@@ -51,23 +46,11 @@ void ExternalMem_SetDataAsInput(void);
 // Reads back the value the chips are putting onto the data lines
 uint32_t ExternalMem_ReadData(void);
 
-/*// Sets the state of the chip select line
-void ExternalMem_AssertCS(void);
-void ExternalMem_DeassertCS(void);
-
-// Sets the state of the write enable line
-void ExternalMem_AssertWE(void);
-void ExternalMem_DeassertWE(void);
-
-// Sets the state of the output enable line
-void ExternalMem_AssertOE(void);
-void ExternalMem_DeassertOE(void);*/
-
 // This is not the nicest-looking software engineering practice
 // in the world, but it saves needlessly wasted CPU cycles
 // that would be wasted in layers upon layers of abstraction
-#define ExternalMem_Assert(assertMask) PORTB &= ~(assertMask);
-#define ExternalMem_Deassert(assertMask) PORTB |= (assertMask);
+#define ExternalMem_Assert(assertMask) do { Ports_ControlOff(assertMask); } while (0)
+#define ExternalMem_Deassert(assertMask) do { Ports_ControlOn(assertMask); } while (0)
 
 // Reads a set of data from all 4 chips simultaneously
 void ExternalMem_Read(uint32_t startAddress, uint32_t *buf, uint32_t len);

@@ -113,11 +113,11 @@ void USBSerial_HandleWaitingForCommandByte(uint8_t byte)
 	// Asked to identify the chips in the SIMM. Identify them and send reply.
 	case IdentifyChips:
 	{
-		struct ChipID chips[4];
+		struct ChipID chips[NUM_CHIPS];
 		SendByte(CommandReplyOK);
 		ExternalMem_IdentifyChips(chips);
 		int x;
-		for (x = 0; x < 4; x++)
+		for (x = 0; x < NUM_CHIPS; x++)
 		{
 			SendByte(chips[x].manufacturerID);
 			SendByte(chips[x].deviceID);

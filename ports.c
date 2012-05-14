@@ -7,12 +7,6 @@
 
 #include "ports.h"
 #include "mcp23s17.h"
-#include <avr/io.h>
-
-// SIMM control signals on port B
-#define SIMM_WE		(1 << 6)
-#define SIMM_OE		(1 << 5)
-#define SIMM_CS		(1 << 4)
 
 // Save some time by not changing the register
 // unless the value has changed [SPI = relatively slow]
@@ -94,42 +88,6 @@ void Ports_DataOut_RMW(uint32_t data, uint32_t modifyMask)
 	PORTE &= ((modifiedDataOff >> 8) & 0xFF);
 	PORTF |= ((modifiedDataOn >> 0) & 0xFF);
 	PORTF &= ((modifiedDataOff >> 0) & 0xFF);
-}
-
-void Ports_SetCSOut(bool data)
-{
-	if (data)
-	{
-		PORTB |= SIMM_CS;
-	}
-	else
-	{
-		PORTB &= ~SIMM_CS;
-	}
-}
-
-void Ports_SetOEOut(bool data)
-{
-	if (data)
-	{
-		PORTB |= SIMM_OE;
-	}
-	else
-	{
-		PORTB &= ~SIMM_OE;
-	}
-}
-
-void Ports_SetWEOut(bool data)
-{
-	if (data)
-	{
-		PORTB |= SIMM_WE;
-	}
-	else
-	{
-		PORTB &= ~SIMM_WE;
-	}
 }
 
 void Ports_SetAddressDDR(uint32_t ddr)
