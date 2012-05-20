@@ -60,7 +60,10 @@ typedef enum ProgrammerIdentifyReply
 } ProgrammerIdentifyReply;
 
 // -------------------------  READ PROTOCOL  -------------------------
-// After CommandReplyOK, the programmer will send a chunk of data.
+// After CommandReplyOK, the requester will send a 4-byte value containing
+// the number of bytes requested to read (should be a multiple of the read
+// chunk size of 1024 bytes, though). The programmer will reply with OK or
+// error, and if OK, also send a chunk of data.
 // The computer will send a reply (see the enum below this one)
 // The programmer will then reply to *that* reply (see this enum)
 typedef enum ProgrammerReadReply

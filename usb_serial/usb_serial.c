@@ -12,7 +12,7 @@
 #include "../tests/simm_electrical_test.h"
 #include "../programmer_protocol.h"
 
-#define CHIP_SIZE					(512UL * 1024UL)
+#define MAX_CHIP_SIZE				(512UL * 1024UL)
 #define READ_CHUNK_SIZE_BYTES		1024UL
 #define WRITE_CHUNK_SIZE_BYTES		1024UL
 #if ((READ_CHUNK_SIZE_BYTES % 4) != 0)
@@ -32,6 +32,7 @@ typedef enum ProgrammerCommandState
 {
 	WaitingForCommand = 0,
 	ReadingByteWaitingForAddress,
+	ReadingChipsReadLength,
 	ReadingChips,
 	ReadingChipsUnableSendError,
 	WritingChips
@@ -41,12 +42,15 @@ static ProgrammerCommandState curCommandState = WaitingForCommand;
 // State info for reading/writing
 static uint8_t byteAddressReceiveCount = 0;
 static uint16_t curReadIndex;
+static uint32_t readLength;
+static uint8_t readLengthByteIndex;
 static int16_t writePosInChunk = -1;
 static uint16_t curWriteIndex = 0;
 
 // Private functions
 void USBSerial_HandleWaitingForCommandByte(uint8_t byte);
 void USBSerial_HandleReadingChipsByte(uint8_t byte);
+void USBSerial_HandleReadingChipsReadLengthByte(uint8_t byte);
 void USBSerial_SendReadDataChunk(void);
 void USBSerial_HandleWritingChipsByte(uint8_t byte);
 void USBSerial_ElectricalTest_Fail_Handler(uint8_t index1, uint8_t index2);
@@ -73,6 +77,9 @@ void USBSerial_Check(void)
 			{
 			case WaitingForCommand:
 				USBSerial_HandleWaitingForCommandByte((uint8_t)recvByte);
+				break;
+			case ReadingChipsReadLength:
+				USBSerial_HandleReadingChipsReadLengthByte((uint8_t)recvByte);
 				break;
 			case ReadingChips:
 				USBSerial_HandleReadingChipsByte((uint8_t)recvByte);
@@ -133,10 +140,11 @@ void USBSerial_HandleWaitingForCommandByte(uint8_t byte)
 		break;
 	// Asked to read all four chips. Set the state, reply with the first chunk
 	case ReadChips:
-		curCommandState = ReadingChips;
+		curCommandState = ReadingChipsReadLength;
 		curReadIndex = 0;
+		readLengthByteIndex = 0;
+		readLength = 0;
 		SendByte(CommandReplyOK);
-		USBSerial_SendReadDataChunk();
 		break;
 	// Erase the chips and reply OK. (TODO: Sometimes erase might fail)
 	case EraseChips:
@@ -197,7 +205,7 @@ void USBSerial_HandleReadingChipsByte(uint8_t byte)
 	case ComputerReadOK:
 		// If they have confirmed the final data chunk, let them know
 		// that they have finished, and enter command state.
-		if (curReadIndex >= (CHIP_SIZE / (READ_CHUNK_SIZE_BYTES/4)))
+		if (curReadIndex >= readLength)
 		{
 			SendByte(ProgrammerReadFinished);
 			curCommandState = WaitingForCommand;
@@ -217,6 +225,33 @@ void USBSerial_HandleReadingChipsByte(uint8_t byte)
 	}
 }
 
+// If we're figuring out the length to read, grab it now...
+void USBSerial_HandleReadingChipsReadLengthByte(uint8_t byte)
+{
+	// There will be four bytes, so count up until we know the length. If they
+	// have sent all four bytes, send the first read chunk.
+	readLength |= (((uint32_t)byte) << (8*readLengthByteIndex));
+	if (++readLengthByteIndex >= 4)
+	{
+		// Ensure it's within limits and a multiple of 1024
+		if ((readLength > NUM_CHIPS * MAX_CHIP_SIZE) ||
+			(readLength % READ_CHUNK_SIZE_BYTES) ||
+			(readLength == 0))
+		{
+			SendByte(ProgrammerReadError);
+			curCommandState = WaitingForCommand;
+		}
+		else
+		{
+			// Convert the length into the number of chunks we need to send
+			readLength /= READ_CHUNK_SIZE_BYTES;
+			curCommandState = ReadingChips;
+			SendByte(ProgrammerReadOK);
+			USBSerial_SendReadDataChunk();
+		}
+	}
+}
+
 // Read the next chunk of data from the SIMM and send it off over the serial.
 void USBSerial_SendReadDataChunk(void)
 {
@@ -226,14 +261,14 @@ void USBSerial_SendReadDataChunk(void)
 	// with other functions, but I'm not bothering with that for now.
 	static union
 	{
-		uint32_t readChunks[READ_CHUNK_SIZE_BYTES / 4];
+		uint32_t readChunks[READ_CHUNK_SIZE_BYTES / NUM_CHIPS];
 		uint8_t readChunkBytes[READ_CHUNK_SIZE_BYTES];
 	} chunks;
 
 	// Read the next chunk of data, send it over USB, and make sure
 	// we sent it correctly.
-	ExternalMem_Read(curReadIndex * (READ_CHUNK_SIZE_BYTES/4),
-			chunks.readChunks, READ_CHUNK_SIZE_BYTES/4);
+	ExternalMem_Read(curReadIndex * (READ_CHUNK_SIZE_BYTES/NUM_CHIPS),
+			chunks.readChunks, READ_CHUNK_SIZE_BYTES/NUM_CHIPS);
 	uint8_t retVal = SendData((const char *)chunks.readChunkBytes,
 			READ_CHUNK_SIZE_BYTES);
 
@@ -273,7 +308,7 @@ void USBSerial_HandleWritingChipsByte(uint8_t byte)
 		case ComputerWriteMore:
 			writePosInChunk = 0;
 			// Make sure we don't write past the capacity of the chips.
-			if (curWriteIndex < CHIP_SIZE / (WRITE_CHUNK_SIZE_BYTES/4))
+			if (curWriteIndex < MAX_CHIP_SIZE / (WRITE_CHUNK_SIZE_BYTES/4))
 			{
 				SendByte(ProgrammerWriteOK);
 			}
