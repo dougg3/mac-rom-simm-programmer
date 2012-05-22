@@ -65,9 +65,9 @@ const USB_Descriptor_Device_t PROGMEM DeviceDescriptor =
 
 	.Endpoint0Size          = FIXED_CONTROL_ENDPOINT_SIZE,
 
-	.VendorID               = 0x03EB,
-	.ProductID              = 0x204B,
-	.ReleaseNumber          = VERSION_BCD(00.02),
+	.VendorID               = 0x16D0,
+	.ProductID              = 0x06AA,
+	.ReleaseNumber          = VERSION_BCD(00.01),
 
 	.ManufacturerStrIndex   = 0x01,
 	.ProductStrIndex        = 0x02,
@@ -203,9 +203,9 @@ const USB_Descriptor_String_t PROGMEM LanguageString =
  */
 const USB_Descriptor_String_t PROGMEM ManufacturerString =
 {
-	.Header                 = {.Size = USB_STRING_LEN(11), .Type = DTYPE_String},
+	.Header                 = {.Size = USB_STRING_LEN(10), .Type = DTYPE_String},
 
-	.UnicodeString          = L"Dean Camera"
+	.UnicodeString          = L"Doug Brown"
 };
 
 /** Product descriptor string. This is a Unicode string containing the product's details in human readable form,
@@ -216,7 +216,7 @@ const USB_Descriptor_String_t PROGMEM ProductString =
 {
 	.Header                 = {.Size = USB_STRING_LEN(23), .Type = DTYPE_String},
 
-	.UnicodeString          = L"LUFA USB-RS232 Adapter"
+	.UnicodeString          = L"Mac ROM SIMM Programmer"
 };
 
 /** This function is called by the library when in device mode, and must be overridden (see library "USB Descriptors"
