@@ -1,13 +1,13 @@
 /*
              LUFA Library
-     Copyright (C) Dean Camera, 2011.
+     Copyright (C) Dean Camera, 2012.
 
   dean [at] fourwalledcubicle [dot] com
            www.lufa-lib.org
 */
 
 /*
-  Copyright 2011  Dean Camera (dean [at] fourwalledcubicle [dot] com)
+  Copyright 2012  Dean Camera (dean [at] fourwalledcubicle [dot] com)
 
   Permission to use, copy, modify, distribute, and sell this
   software and its documentation for any purpose is hereby granted
@@ -91,7 +91,7 @@
 		 *  (i.e. AT32UC3A0*) when defined.
 		 */
 		#define USB_SERIES_UC3A0_AVR
-		
+
 		/** Indicates that the target AVR microcontroller belongs to the AVR32 UC3A1 Series USB controller
 		 *  (i.e. AT32UC3A1*) when defined.
 		 */
@@ -111,7 +111,7 @@
 		 *  (i.e. AT32UC3B1*) when defined.
 		 */
 		#define USB_SERIES_UC3B1_AVR
-		
+
 		/** Indicates that the target AVR microcontroller belongs to the XMEGA A1U Series USB controller
 		 *  (i.e. ATXMEGA*A1U) when defined.
 		 */
@@ -209,7 +209,8 @@
 			#elif (defined(__AVR_ATxmega256A3BU__))
 				#define USB_SERIES_A3BU_XMEGA
 				#define USB_CAN_BE_DEVICE
-			#elif (defined(__AVR_ATxmega16A4U__) || defined(__AVR_ATxmega32A4U__))
+			#elif (defined(__AVR_ATxmega16A4U__) || defined(__AVR_ATxmega32A4U__) || \
+			       defined(__AVR_ATxmega64A4U__) || defined(__AVR_ATxmega128A4U__))
 				#define USB_SERIES_A4U_XMEGA
 				#define USB_CAN_BE_DEVICE
 			#elif (defined(__AVR_ATxmega128B1__) || defined(__AVR_ATxmega64B1__))
@@ -219,7 +220,7 @@
 				#define USB_SERIES_B3_XMEGA
 				#define USB_CAN_BE_DEVICE
 			#endif
-			
+
 			#if (defined(USB_CAN_BE_DEVICE) && defined(USB_CAN_BE_HOST))
 				#define USB_CAN_BE_BOTH
 			#endif
@@ -241,7 +242,7 @@
 					#undef USB_CAN_BE_BOTH
 				#endif
 			#endif
-			
+
 			#if (defined(USB_HOST_ONLY) && defined(USB_DEVICE_ONLY))
 				#error USB_HOST_ONLY and USB_DEVICE_ONLY are mutually exclusive.
 			#endif
@@ -259,3 +260,4 @@
 #endif
 
 /** @} */
+

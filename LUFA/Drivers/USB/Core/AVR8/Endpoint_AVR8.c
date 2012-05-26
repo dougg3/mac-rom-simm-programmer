@@ -1,13 +1,13 @@
 /*
              LUFA Library
-     Copyright (C) Dean Camera, 2011.
+     Copyright (C) Dean Camera, 2012.
 
   dean [at] fourwalledcubicle [dot] com
            www.lufa-lib.org
 */
 
 /*
-  Copyright 2011  Dean Camera (dean [at] fourwalledcubicle [dot] com)
+  Copyright 2012  Dean Camera (dean [at] fourwalledcubicle [dot] com)
 
   Permission to use, copy, modify, distribute, and sell this
   software and its documentation for any purpose is hereby granted
@@ -52,7 +52,7 @@ bool Endpoint_ConfigureEndpoint_Prv(const uint8_t Number,
 	UECFG1X = UECFG1XData;
 
 	return Endpoint_IsConfigured();
-#else	
+#else
 	for (uint8_t EPNum = Number; EPNum < ENDPOINT_TOTAL_ENDPOINTS; EPNum++)
 	{
 		uint8_t UECFG0XTemp;
@@ -60,7 +60,7 @@ bool Endpoint_ConfigureEndpoint_Prv(const uint8_t Number,
 		uint8_t UEIENXTemp;
 
 		Endpoint_SelectEndpoint(EPNum);
-		
+
 		if (EPNum == Number)
 		{
 			UECFG0XTemp = UECFG0XData;
@@ -84,11 +84,11 @@ bool Endpoint_ConfigureEndpoint_Prv(const uint8_t Number,
 		UECFG0X = UECFG0XTemp;
 		UECFG1X = UECFG1XTemp;
 		UEIENX  = UEIENXTemp;
-			
+
 		if (!(Endpoint_IsConfigured()))
-		  return false;			
+		  return false;
 	}
-	
+
 	Endpoint_SelectEndpoint(Number);
 	return true;
 #endif
@@ -155,7 +155,7 @@ uint8_t Endpoint_WaitUntilReady(void)
 			if (Endpoint_IsOUTReceived())
 			  return ENDPOINT_READYWAIT_NoError;
 		}
-		
+
 		uint8_t USB_DeviceState_LCL = USB_DeviceState;
 
 		if (USB_DeviceState_LCL == DEVICE_STATE_Unattached)

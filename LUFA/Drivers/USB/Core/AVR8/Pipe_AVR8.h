@@ -1,13 +1,13 @@
 /*
              LUFA Library
-     Copyright (C) Dean Camera, 2011.
+     Copyright (C) Dean Camera, 2012.
 
   dean [at] fourwalledcubicle [dot] com
            www.lufa-lib.org
 */
 
 /*
-  Copyright 2011  Dean Camera (dean [at] fourwalledcubicle [dot] com)
+  Copyright 2012  Dean Camera (dean [at] fourwalledcubicle [dot] com)
 
   Permission to use, copy, modify, distribute, and sell this
   software and its documentation for any purpose is hereby granted
@@ -139,7 +139,7 @@
 			 */
 			#define PIPE_TOKEN_OUT                  (2 << PTOKEN0)
 			//@}
-			
+
 			/** \name Pipe Bank Mode Masks */
 			//@{
 			/** Mask for the bank mode selection for the \ref Pipe_ConfigurePipe() macro. This indicates that the pipe
@@ -425,7 +425,7 @@
 				                   PIPE_ERRORFLAG_DATATGL)) |
 				        (UPSTAX & (PIPE_ERRORFLAG_OVERFLOW | PIPE_ERRORFLAG_UNDERFLOW)));
 			}
-			
+
 			/** Retrieves the number of busy banks in the currently selected pipe, which have been queued for
 			 *  transmission via the \ref Pipe_ClearOUT() command, or are awaiting acknowledgement via the
 			 *  \ref Pipe_ClearIN() command.

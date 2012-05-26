@@ -1,13 +1,13 @@
 /*
              LUFA Library
-     Copyright (C) Dean Camera, 2011.
+     Copyright (C) Dean Camera, 2012.
 
   dean [at] fourwalledcubicle [dot] com
            www.lufa-lib.org
 */
 
 /*
-  Copyright 2011  Dean Camera (dean [at] fourwalledcubicle [dot] com)
+  Copyright 2012  Dean Camera (dean [at] fourwalledcubicle [dot] com)
 
   Permission to use, copy, modify, distribute, and sell this
   software and its documentation for any purpose is hereby granted
@@ -65,9 +65,9 @@ uint8_t USB_Host_SendControlRequest(void* const BufferPtr)
 	uint8_t* HeaderStream = (uint8_t*)&USB_ControlRequest;
 
 	for (uint8_t HeaderByte = 0; HeaderByte < sizeof(USB_Request_Header_t); HeaderByte++)
-	  Pipe_Write_8(*(HeaderStream++));	
+	  Pipe_Write_8(*(HeaderStream++));
 	#endif
-	
+
 	Pipe_ClearSETUP();
 
 	if ((ReturnStatus = USB_Host_WaitForIOS(USB_HOST_WAITFOR_SetupSent)) != HOST_SENDCONTROL_Successful)
@@ -201,7 +201,7 @@ uint8_t USB_Host_SetDeviceConfiguration(const uint8_t ConfigNumber)
 		};
 
 	Pipe_SelectPipe(PIPE_CONTROLPIPE);
-	
+
 	if ((ErrorCode = USB_Host_SendControlRequest(NULL)) == HOST_SENDCONTROL_Successful)
 	{
 		USB_Host_ConfigurationNumber = ConfigNumber;

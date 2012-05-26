@@ -1,13 +1,13 @@
 /*
              LUFA Library
-     Copyright (C) Dean Camera, 2011.
+     Copyright (C) Dean Camera, 2012.
 
   dean [at] fourwalledcubicle [dot] com
            www.lufa-lib.org
 */
 
 /*
-  Copyright 2011  Dean Camera (dean [at] fourwalledcubicle [dot] com)
+  Copyright 2012  Dean Camera (dean [at] fourwalledcubicle [dot] com)
 
   Permission to use, copy, modify, distribute, and sell this
   software and its documentation for any purpose is hereby granted
@@ -35,7 +35,7 @@
    header, copy this into your project's root directory and supply
    the \c USE_LUFA_CONFIG_HEADER token to the compiler so that it is
    defined in all compiled source files.
-   
+
    For information on what each token does, refer to the LUFA
    manual section "Summary of Compile Tokens".
 */
@@ -83,9 +83,11 @@
 //		#define HOST_STATE_AS_GPIOR              {Insert Value Here}
 //		#define USB_HOST_TIMEOUT_MS              {Insert Value Here}
 //		#define HOST_DEVICE_SETTLE_DELAY_MS	     {Insert Value Here}
+//      #define NO_AUTO_VBUS_MANAGEMENT
+//      #define INVERTED_VBUS_ENABLE_LINE
 
 	#elif (ARCH == ARCH_XMEGA)
-	
+
 		/* Non-USB Related Configuration Tokens: */
 //		#define DISABLE_TERMINAL_CODES
 
@@ -150,7 +152,9 @@
 		/* USB Host Mode Driver Related Tokens: */
 //		#define USB_HOST_TIMEOUT_MS              {Insert Value Here}
 //		#define HOST_DEVICE_SETTLE_DELAY_MS	     {Insert Value Here}
+//      #define NO_AUTO_VBUS_MANAGEMENT
+//      #define INVERTED_VBUS_ENABLE_LINE
 
-	#endif	
+	#endif
 #endif
 

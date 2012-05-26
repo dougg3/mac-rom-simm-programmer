@@ -1,13 +1,13 @@
 /*
              LUFA Library
-     Copyright (C) Dean Camera, 2011.
+     Copyright (C) Dean Camera, 2012.
 
   dean [at] fourwalledcubicle [dot] com
            www.lufa-lib.org
 */
 
 /*
-  Copyright 2011  Dean Camera (dean [at] fourwalledcubicle [dot] com)
+  Copyright 2012  Dean Camera (dean [at] fourwalledcubicle [dot] com)
 
   Permission to use, copy, modify, distribute, and sell this
   software and its documentation for any purpose is hereby granted
@@ -69,7 +69,7 @@
 				 */
 				#define USB_HOST_TIMEOUT_MS                1000
 			#endif
-			
+
 		/* Enums: */
 			/** Enum for the \ref USB_Host_SendControlRequest() return code, indicating the reason for the error
 			 *  if the transfer of the request is unsuccessful.
@@ -101,7 +101,7 @@
 			 *  \ingroup Group_Host
 			 */
 			extern uint8_t USB_Host_ConfigurationNumber;
-			
+
 		/* Function Prototypes: */
 			/** Sends the request stored in the \ref USB_ControlRequest global structure to the attached device,
 			 *  and transfers the data stored in the buffer to the device, or from the device to the buffer
@@ -130,7 +130,7 @@
 			 *  \return A value from the \ref USB_Host_SendControlErrorCodes_t enum to indicate the result.
 			 */
 			uint8_t USB_Host_SetDeviceConfiguration(const uint8_t ConfigNumber);
-			
+
 			/** Sends a GET CONFIGURATION standard request to the attached device, to retrieve the currently selected
 			 *  device configuration index.
 			 *
@@ -165,7 +165,7 @@
 
 			/** Retrieves the current feature status of the attached device, via a GET STATUS standard request. The
 			 *  retrieved feature status can then be examined by masking the retrieved value with the various
-			 *  FEATURE_* masks for bus/self power information and remote wakeup support.
+			 *  \c FEATURE_* masks for bus/self power information and remote wakeup support.
 			 *
 			 *  \note After this routine returns, the control pipe will be selected.
 			 *
@@ -239,7 +239,7 @@
 			{
 				return USB_Host_GetDescriptor(DTYPE_Device, 0, DeviceDescriptorPtr, sizeof(USB_Descriptor_Device_t));
 			}
-			
+
 			/** Sends a GET DESCRIPTOR standard request to the attached device, requesting the string descriptor
 			 *  of the specified index. This can be used to easily retrieve string descriptors from the device by
 			 *  index, after the index is obtained from the Device or Configuration descriptors. This is a convenience
