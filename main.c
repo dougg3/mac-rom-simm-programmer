@@ -28,21 +28,21 @@
 #include "external_mem.h"
 #include "tests/simm_electrical_test.h"
 #include "usb_serial/usb_serial.h"
+#include "led.h"
 
 int main(void)
 {
 	cli();
 
-	DDRD |= (1 << 7);
-	PORTD &= ~(1 << 7);
+	LED_Init();
 
 	// If there was a brownout detected, turn on the LED momentarily
 	if (MCUSR & (1 << BORF))
 	{
 		MCUSR = 0;
-		PORTD |= (1 << 7);
+		LED_On();
 		_delay_ms(500);
-		PORTD &= ~(1 << 7);
+		LED_Off();
 	}
 
 	ExternalMem_Init();

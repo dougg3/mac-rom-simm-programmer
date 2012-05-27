@@ -28,6 +28,7 @@
 #include "../external_mem.h"
 #include "../tests/simm_electrical_test.h"
 #include "../programmer_protocol.h"
+#include "../led.h"
 
 #define MAX_CHIP_SIZE				(512UL * 1024UL)
 #define READ_CHUNK_SIZE_BYTES		1024UL
@@ -228,11 +229,13 @@ void USBSerial_HandleReadingChipsByte(uint8_t byte)
 		// that they have finished, and enter command state.
 		if (curReadIndex >= readLength)
 		{
+			LED_Off();
 			SendByte(ProgrammerReadFinished);
 			curCommandState = WaitingForCommand;
 		}
 		else // There's more data left to read, so read it and send it to them!
 		{
+			LED_Toggle();
 			SendByte(ProgrammerReadMoreData);
 			USBSerial_SendReadDataChunk();
 		}
@@ -341,11 +344,13 @@ void USBSerial_HandleWritingChipsByte(uint8_t byte)
 			break;
 		// The computer said that it's done writing.
 		case ComputerWriteFinish:
+			LED_Off();
 			SendByte(ProgrammerWriteOK);
 			curCommandState = WaitingForCommand;
 			break;
 		// The computer asked to cancel.
 		case ComputerWriteCancel:
+			LED_Off();
 			SendByte(ProgrammerWriteConfirmCancel);
 			curCommandState = WaitingForCommand;
 			break;
@@ -364,6 +369,7 @@ void USBSerial_HandleWritingChipsByte(uint8_t byte)
 			SendByte(ProgrammerWriteOK);
 			curWriteIndex++;
 			writePosInChunk = -1;
+			LED_Toggle();
 		}
 	}
 }
