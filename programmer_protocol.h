@@ -41,7 +41,9 @@ typedef enum ProgrammerCommand
 	GetBootloaderState,
 	EnterBootloader,
 	EnterProgrammer,
-	BootloaderEraseAndWriteProgram
+	BootloaderEraseAndWriteProgram,
+    SetSIMMTypePLCC32_2MB,
+    SetSIMMTypeLarger
 } ProgrammerCommand;
 
 // After a command is sent, the programmer will always respond with

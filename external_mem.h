@@ -45,6 +45,14 @@ struct ChipID
 #define IC4				(1 << 0)
 #define ALL_CHIPS		(IC1 | IC2 | IC3 | IC4)
 
+// Type of SIMM currently being addressed -- determines command protocol used
+// to talk to the chips
+typedef enum ChipType
+{
+	ChipType8BitData_4MBitSize, /* 512Kbit to 2Mbit flash, 8-bit */
+	ChipType8Bit16BitData_16MBitSize /* 16Mbit flash, 8/16-bit in 8-bit mode */
+} ChipType;
+
 // Initializes the (bit-banged) external memory interface
 void ExternalMem_Init(void);
 
@@ -94,5 +102,8 @@ void ExternalMem_WriteByteToChips(uint32_t address, uint32_t data, uint8_t chips
 // (each uint32_t contains an 8-bit portion for each chip,
 // which is masked away if the chip is not requested)
 void ExternalMem_Write(uint32_t startAddress, uint32_t *buf, uint32_t len, uint8_t chipsMask);
+
+// Tells which flash command protocol to use
+void ExternalMem_SetChipType(ChipType type);
 
 #endif /* EXTERNAL_MEM_H_ */

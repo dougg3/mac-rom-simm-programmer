@@ -208,6 +208,15 @@ void USBSerial_HandleWaitingForCommandByte(uint8_t byte)
 		// Already in the programmer
 		SendByte(CommandReplyOK);
 		break;
+	// Set the SIMM type to the older, smaller chip size (2MB and below)
+	case SetSIMMTypePLCC32_2MB:
+		ExternalMem_SetChipType(ChipType8BitData_4MBitSize);
+		SendByte(CommandReplyOK);
+		break;
+	case SetSIMMTypeLarger:
+		ExternalMem_SetChipType(ChipType8Bit16BitData_16MBitSize);
+		SendByte(CommandReplyOK);
+		break;
 	// We don't know what this command is, so reply that it was invalid.
 	default:
 		SendByte(CommandReplyInvalid);

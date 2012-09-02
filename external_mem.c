@@ -29,6 +29,9 @@
 
 #define HIGHEST_ADDRESS_LINE	20
 
+// Default setup
+static ChipType curChipType = ChipType8BitData_4MBitSize;
+
 // Private functions
 uint32_t ExternalMem_MaskForChips(uint8_t chips);
 void ExternalMem_WaitCompletion(uint8_t chipsMask);
@@ -163,15 +166,31 @@ void ExternalMem_UnlockChips(uint8_t chipsMask)
 	// Use a mask so we don't unlock chips we don't want to talk with
 	uint32_t mask = ExternalMem_MaskForChips(chipsMask);
 
-	// First part of unlock sequence:
-	// Write 0x55555555 to the address bus and 0xAA to the data bus
-	// (Some datasheets may only say 0x555 or 0x5555, but they ignore
-	// the upper bits, so writing the alternating pattern to all address lines
-	// should make it compatible with larger chips)
-	ExternalMem_WriteCycle(0x55555555UL, 0xAAAAAAAAUL & mask);
+	// The unlock sequence changes depending on the chip
+	if (curChipType == ChipType8BitData_4MBitSize)
+	{
+		// First part of unlock sequence:
+		// Write 0x55555555 to the address bus and 0xAA to the data bus
+		// (Some datasheets may only say 0x555 or 0x5555, but they ignore
+		// the upper bits, so writing the alternating pattern to all address lines
+		// should make it compatible with larger chips)
+		ExternalMem_WriteCycle(0x55555555UL, 0xAAAAAAAAUL & mask);
 
-	// Second part of unlock sequence is the same thing, but reversed.
-	ExternalMem_WriteCycle(0xAAAAAAAAUL, 0x55555555UL & mask);
+		// Second part of unlock sequence is the same thing, but reversed.
+		ExternalMem_WriteCycle(0xAAAAAAAAUL, 0x55555555UL & mask);
+	}
+	// The protocol is slightly different for 8/16-bit devices in 8-bit mode:
+	else if (curChipType == ChipType8Bit16BitData_16MBitSize)
+	{
+		// First part of unlock sequence:
+		// Write 0xAAAAAAAA to the address bus and 0xAA to the data bus
+		ExternalMem_WriteCycle(0xAAAAAAAAUL, 0xAAAAAAAAUL & mask);
+
+		// Second part of unlock sequence is the reversed pattern.
+		ExternalMem_WriteCycle(0x55555555UL, 0x55555555UL & mask);
+	}
+	// shouldn't ever be a value other than those two, so I'm not writing
+	// any extra code for that case.
 }
 
 void ExternalMem_IdentifyChips(struct ChipID *chips)
@@ -180,7 +199,16 @@ void ExternalMem_IdentifyChips(struct ChipID *chips)
 	ExternalMem_UnlockChips(ALL_CHIPS);
 
 	// Write 0x90 to 0x55555555 for the identify command...
-	ExternalMem_WriteCycle(0x55555555UL, 0x90909090UL);
+	if (curChipType == ChipType8BitData_4MBitSize)
+	{
+		ExternalMem_WriteCycle(0x55555555UL, 0x90909090UL);
+	}
+	else if (curChipType == ChipType8Bit16BitData_16MBitSize)
+	{
+		ExternalMem_WriteCycle(0xAAAAAAAAUL, 0x90909090UL);
+	}
+	// shouldn't ever be a value other than those two, so I'm not writing
+	// any extra code for that case.
 
 	// Now we can read the vendor and product ID
 	uint32_t result = ExternalMem_ReadCycle(0);
@@ -204,9 +232,23 @@ void ExternalMem_IdentifyChips(struct ChipID *chips)
 void ExternalMem_EraseChips(uint8_t chipsMask)
 {
 	ExternalMem_UnlockChips(chipsMask);
-	ExternalMem_WriteCycle(0x55555555UL, 0x80808080UL);
+	if (curChipType == ChipType8BitData_4MBitSize)
+	{
+		ExternalMem_WriteCycle(0x55555555UL, 0x80808080UL);
+	}
+	else if (curChipType == ChipType8Bit16BitData_16MBitSize)
+	{
+		ExternalMem_WriteCycle(0xAAAAAAAAUL, 0x80808080UL);
+	}
 	ExternalMem_UnlockChips(chipsMask);
-	ExternalMem_WriteCycle(0x55555555UL, 0x10101010UL);
+	if (curChipType == ChipType8BitData_4MBitSize)
+	{
+		ExternalMem_WriteCycle(0x55555555UL, 0x10101010UL);
+	}
+	else if (curChipType == ChipType8Bit16BitData_16MBitSize)
+	{
+		ExternalMem_WriteCycle(0xAAAAAAAAUL, 0x10101010UL);
+	}
 
 	ExternalMem_WaitCompletion(chipsMask);
 }
@@ -282,7 +324,14 @@ void ExternalMem_WriteByteToChips(uint32_t address, uint32_t data, uint8_t chips
 	uint32_t mask = ExternalMem_MaskForChips(chipsMask);
 
 	ExternalMem_UnlockChips(chipsMask);
-	ExternalMem_WriteCycle(0x55555555UL, 0xA0A0A0A0UL & mask);
+	if (curChipType == ChipType8BitData_4MBitSize)
+	{
+		ExternalMem_WriteCycle(0x55555555UL, 0xA0A0A0A0UL & mask);
+	}
+	else if (curChipType == ChipType8Bit16BitData_16MBitSize)
+	{
+		ExternalMem_WriteCycle(0xAAAAAAAAUL, 0xA0A0A0A0UL & mask);
+	}
 	ExternalMem_WriteCycle(address, data & mask);
 	ExternalMem_WaitCompletion(chipsMask);
 }
@@ -293,4 +342,9 @@ void ExternalMem_Write(uint32_t startAddress, uint32_t *buf, uint32_t len, uint8
 	{
 		ExternalMem_WriteByteToChips(startAddress++, *buf++, chipsMask);
 	}
+}
+
+void ExternalMem_SetChipType(ChipType type)
+{
+	curChipType = type;
 }
