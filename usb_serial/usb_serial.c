@@ -30,7 +30,7 @@
 #include "../programmer_protocol.h"
 #include "../led.h"
 
-#define MAX_CHIP_SIZE				(512UL * 1024UL)
+#define MAX_CHIP_SIZE				(2UL * 1024UL * 1024UL)
 #define READ_CHUNK_SIZE_BYTES		1024UL
 #define WRITE_CHUNK_SIZE_BYTES		1024UL
 #if ((READ_CHUNK_SIZE_BYTES % 4) != 0)
