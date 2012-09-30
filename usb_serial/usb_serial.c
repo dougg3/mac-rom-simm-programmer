@@ -29,6 +29,7 @@
 #include "../tests/simm_electrical_test.h"
 #include "../programmer_protocol.h"
 #include "../led.h"
+#include <stdbool.h>
 
 #define MAX_CHIP_SIZE				(2UL * 1024UL * 1024UL)
 #define READ_CHUNK_SIZE_BYTES		1024UL
@@ -64,6 +65,7 @@ static uint32_t readLength;
 static uint8_t readLengthByteIndex;
 static int16_t writePosInChunk = -1;
 static uint16_t curWriteIndex = 0;
+static bool verifyDuringWrite = false;
 
 // Private functions
 void USBSerial_HandleWaitingForCommandByte(uint8_t byte);
@@ -215,6 +217,14 @@ void USBSerial_HandleWaitingForCommandByte(uint8_t byte)
 		break;
 	case SetSIMMTypeLarger:
 		ExternalMem_SetChipType(ChipType8Bit16BitData_16MBitSize);
+		SendByte(CommandReplyOK);
+		break;
+	case SetVerifyWhileWriting:
+		verifyDuringWrite = true;
+		SendByte(CommandReplyOK);
+		break;
+	case SetNoVerifyWhileWriting:
+		verifyDuringWrite = false;
 		SendByte(CommandReplyOK);
 		break;
 	// We don't know what this command is, so reply that it was invalid.
@@ -373,12 +383,25 @@ void USBSerial_HandleWritingChipsByte(uint8_t byte)
 		{
 			// We filled up the chunk, write it out and confirm it, then wait
 			// for the next command from the computer!
-			ExternalMem_Write(curWriteIndex * (WRITE_CHUNK_SIZE_BYTES/4),
-					chunks.writeChunks, WRITE_CHUNK_SIZE_BYTES/4, ALL_CHIPS);
-			SendByte(ProgrammerWriteOK);
-			curWriteIndex++;
-			writePosInChunk = -1;
-			LED_Toggle();
+			uint8_t writeResult = ExternalMem_Write(curWriteIndex * (WRITE_CHUNK_SIZE_BYTES/4),
+					chunks.writeChunks, WRITE_CHUNK_SIZE_BYTES/4, ALL_CHIPS, verifyDuringWrite);
+
+			// But if we asked to verify, make sure it came out OK.
+			if (verifyDuringWrite && (writeResult != 0))
+			{
+				// Uh oh -- verification failure.
+				LED_Off();
+				// Send the fail bit along with a mask of failed chips.
+				SendByte(ProgrammerWriteVerificationError | writeResult);
+				curCommandState = WaitingForCommand;
+			}
+			else
+			{
+				SendByte(ProgrammerWriteOK);
+				curWriteIndex++;
+				writePosInChunk = -1;
+				LED_Toggle();
+			}
 		}
 	}
 }

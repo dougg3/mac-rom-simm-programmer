@@ -336,12 +336,69 @@ void ExternalMem_WriteByteToChips(uint32_t address, uint32_t data, uint8_t chips
 	ExternalMem_WaitCompletion(chipsMask);
 }
 
-void ExternalMem_Write(uint32_t startAddress, uint32_t *buf, uint32_t len, uint8_t chipsMask)
+uint8_t ExternalMem_Write(uint32_t startAddress, uint32_t *buf, uint32_t len, uint8_t chipsMask, bool doVerify)
 {
+	// Use a mask so we don't worry about chips we don't want to talk with
+	uint32_t mask = ExternalMem_MaskForChips(chipsMask);
+
 	while (len--)
 	{
-		ExternalMem_WriteByteToChips(startAddress++, *buf++, chipsMask);
+		ExternalMem_WriteByteToChips(startAddress, *buf, chipsMask);
+		if (doVerify)
+		{
+			#define VERIFY_EXTRA_READ_TRIES	2
+
+			// Read back the word we just wrote to make sure it's OK...
+			uint32_t readback = ExternalMem_ReadCycle(startAddress) & mask;
+			if (readback != (*buf & mask))
+			{
+				// We found a failure, but don't despair yet. Let's try reading
+				// two more times in case it a fluke of the data toggle polling
+				// algorithm.
+				bool secondFailureFound = false;
+				int try = 0;
+
+				while ((try < VERIFY_EXTRA_READ_TRIES) && !secondFailureFound)
+				{
+					try++;
+					readback = ExternalMem_ReadCycle(startAddress) & mask;
+					if (readback != (*buf & mask))
+					{
+						secondFailureFound = true;
+					}
+				}
+
+				// If we re-read it a few times and it failed again, the write
+				// failed. Otherwise, it was probably just the data toggle
+				// polling algorithm giving us fits.
+				if (secondFailureFound)
+				{
+					uint8_t failMask = 0;
+					// Figure out the mask of chip(s) acting up
+					int x;
+					for (x = 0; x < NUM_CHIPS; x++)
+					{
+						// Is this a chip we're working with?
+						if (chipsMask & (1 << x))
+						{
+							if ((readback & (0xFFUL << (8*x))) != (*buf & (0xFFUL << (8*x))))
+							{
+								// Save the failMask in reverse order
+								// (so bit 0 refers to IC1 rather than IC4)
+								failMask |= (1 << ((NUM_CHIPS - 1) - x));
+							}
+						}
+					}
+					return failMask;
+				}
+			}
+		}
+
+		startAddress++;
+		buf++;
 	}
+
+	return 0;
 }
 
 void ExternalMem_SetChipType(ChipType type)

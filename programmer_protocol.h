@@ -43,7 +43,9 @@ typedef enum ProgrammerCommand
 	EnterProgrammer,
 	BootloaderEraseAndWriteProgram,
     SetSIMMTypePLCC32_2MB,
-    SetSIMMTypeLarger
+    SetSIMMTypeLarger,
+    SetVerifyWhileWriting,
+    SetNoVerifyWhileWriting
 } ProgrammerCommand;
 
 // After a command is sent, the programmer will always respond with
@@ -115,6 +117,11 @@ typedef enum ComputerReadReply
 // this one, and then the computer can send a 1024-byte chunk of data.
 // The programmer will reply with ProgrammerWriteOK, and then the cycle can
 // continue (the computer sends another request in this enum)
+//
+// If the programmer was asked to verify while writing and a verification error
+// occurs, it will respond with ProgrammerWriteVerificationError ORed with a bit
+// mask of chips that are acting up (so it could be 0x81 if IC1 is acting up,
+// for example)
 typedef enum ComputerWriteRequest
 {
 	ComputerWriteMore = 0,
@@ -126,7 +133,8 @@ typedef enum ProgrammerWriteReply
 {
 	ProgrammerWriteOK = 0,
 	ProgrammerWriteError,
-	ProgrammerWriteConfirmCancel
+	ProgrammerWriteConfirmCancel,
+	ProgrammerWriteVerificationError = 0x80 /* high bit signifies verify error, low bits signify which chips are bad */
 } ProgrammerWriteReply;
 
 // -------------------------  BOOTLOADER STATE PROTOCOL  -------------------------

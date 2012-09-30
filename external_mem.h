@@ -101,7 +101,9 @@ void ExternalMem_WriteByteToChips(uint32_t address, uint32_t data, uint8_t chips
 // Writes a buffer to the requested chips simultaneously
 // (each uint32_t contains an 8-bit portion for each chip,
 // which is masked away if the chip is not requested)
-void ExternalMem_Write(uint32_t startAddress, uint32_t *buf, uint32_t len, uint8_t chipsMask);
+// returns a mask representing the chips acting up (if requested with doVerify)
+// or 0 on success (or if verification was not requested)
+uint8_t ExternalMem_Write(uint32_t startAddress, uint32_t *buf, uint32_t len, uint8_t chipsMask, bool doVerify);
 
 // Tells which flash command protocol to use
 void ExternalMem_SetChipType(ChipType type);
