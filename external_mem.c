@@ -88,6 +88,9 @@ void ExternalMem_SetAddressAndData(uint32_t address, uint32_t data)
 void ExternalMem_SetDataAsInput(void)
 {
 	Ports_SetDataDDR(0);
+	// enable pull-ups as well -- this will give default values if a chip is
+	// not responding.
+	Ports_DataPullups_RMW(0xFFFFFFFFUL, 0xFFFFFFFFUL);
 }
 
 uint32_t ExternalMem_ReadData(void)
@@ -346,15 +349,6 @@ uint8_t ExternalMem_Write(uint32_t startAddress, uint32_t *buf, uint32_t len, ui
 		ExternalMem_WriteByteToChips(startAddress, *buf, chipsMask);
 		if (doVerify)
 		{
-			// Write the opposite data to the data bus before attempting to read
-			// the chips for verification. At this point, the OE and WE lines
-			// will be deasserted (due to WriteByteToChips()) so writing a value
-			// to the data bus won't do anything. But if there's no chip on
-			// a data line, reading back seems to "remember" the last value
-			// written. So writing the opposite of what we expect will ensure
-			// that the readback will fail if a chip isn't responding.
-			ExternalMem_SetData(~(*buf));
-
 			#define VERIFY_EXTRA_READ_TRIES	2
 
 			// Read back the word we just wrote to make sure it's OK...
