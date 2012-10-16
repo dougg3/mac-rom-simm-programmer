@@ -34,6 +34,7 @@
 #define MAX_CHIP_SIZE				(2UL * 1024UL * 1024UL)
 #define READ_CHUNK_SIZE_BYTES		1024UL
 #define WRITE_CHUNK_SIZE_BYTES		1024UL
+#define ERASE_SECTOR_SIZE_BYTES		(256UL * 1024UL)
 #if ((READ_CHUNK_SIZE_BYTES % 4) != 0)
 #error Read chunk size should be a multiple of 4 bytes
 #endif
@@ -54,7 +55,8 @@ typedef enum ProgrammerCommandState
 	ReadingChipsReadLength,
 	ReadingChips,
 	ReadingChipsUnableSendError,
-	WritingChips
+	WritingChips,
+	ErasePortionReadingPosLength
 } ProgrammerCommandState;
 static ProgrammerCommandState curCommandState = WaitingForCommand;
 
@@ -66,6 +68,8 @@ static uint8_t readLengthByteIndex;
 static int16_t writePosInChunk = -1;
 static uint16_t curWriteIndex = 0;
 static bool verifyDuringWrite = false;
+static uint32_t erasePosition;
+static uint32_t eraseLength;
 
 // Private functions
 void USBSerial_HandleWaitingForCommandByte(uint8_t byte);
@@ -74,6 +78,7 @@ void USBSerial_HandleReadingChipsReadLengthByte(uint8_t byte);
 void USBSerial_SendReadDataChunk(void);
 void USBSerial_HandleWritingChipsByte(uint8_t byte);
 void USBSerial_ElectricalTest_Fail_Handler(uint8_t index1, uint8_t index2);
+void USBSerial_HandleErasePortionReadPosLengthByte(uint8_t byte);
 
 // Read/write to USB serial macros -- easier than retyping
 // CDC_Device_XXX(&VirtualSerial_CDC_Interface...) every time
@@ -106,6 +111,9 @@ void USBSerial_Check(void)
 				break;
 			case WritingChips:
 				USBSerial_HandleWritingChipsByte((uint8_t)recvByte);
+				break;
+			case ErasePortionReadingPosLength:
+				USBSerial_HandleErasePortionReadPosLengthByte((uint8_t)recvByte);
 				break;
 			}
 		}
@@ -225,6 +233,13 @@ void USBSerial_HandleWaitingForCommandByte(uint8_t byte)
 		break;
 	case SetNoVerifyWhileWriting:
 		verifyDuringWrite = false;
+		SendByte(CommandReplyOK);
+		break;
+	case ErasePortion:
+		readLengthByteIndex = 0;
+		eraseLength = 0;
+		erasePosition = 0;
+		curCommandState = ErasePortionReadingPosLength;
 		SendByte(CommandReplyOK);
 		break;
 	// We don't know what this command is, so reply that it was invalid.
@@ -414,6 +429,76 @@ void USBSerial_ElectricalTest_Fail_Handler(uint8_t index1, uint8_t index2)
 	SendByte(ProgrammerElectricalTestFail);
 	SendByte(index1);
 	SendByte(index2);
+}
+
+// If we're figuring out the position/length to erase, parse it here.
+void USBSerial_HandleErasePortionReadPosLengthByte(uint8_t byte)
+{
+	// Read in the position and length to erase
+	if (readLengthByteIndex < 4)
+	{
+		erasePosition |= (((uint32_t)byte) << (8*readLengthByteIndex));
+	}
+	else
+	{
+		eraseLength |= (((uint32_t)byte) << (8*(readLengthByteIndex - 4)));
+	}
+
+	if (++readLengthByteIndex >= 8)
+	{
+		ChipType chipType = ExternalMem_GetChipType();
+		bool eraseSuccess = false;
+
+		// Ensure they are both within limits of sector size erasure
+		if (((erasePosition & ERASE_SECTOR_SIZE_BYTES) == 0) &&
+			((eraseLength & ERASE_SECTOR_SIZE_BYTES) == 0))
+		{
+			uint32_t boundary = eraseLength + erasePosition;
+
+			// Ensure they are within the limits of the chip size too
+			if (chipType == ChipType8BitData_4MBitSize)
+			{
+				if (boundary <= (2 * 1024UL * 1024UL))
+				{
+					// OK! We're erasing certain sectors of a 2 MB SIMM.
+					SendByte(ProgrammerErasePortionOK);
+					CDC_Device_Flush(&VirtualSerial_CDC_Interface);
+					if (ExternalMem_EraseSectors(erasePosition/NUM_CHIPS,
+							eraseLength/NUM_CHIPS, ALL_CHIPS))
+					{
+						eraseSuccess = true;
+					}
+				}
+			}
+			else if (chipType == ChipType8Bit16BitData_16MBitSize)
+			{
+				if (boundary <= (8 * 1024UL * 1024UL))
+				{
+					// OK! We're erasing certain sectors of an 8 MB SIMM.
+					SendByte(ProgrammerErasePortionOK);
+					CDC_Device_Flush(&VirtualSerial_CDC_Interface);
+					if (ExternalMem_EraseSectors(erasePosition/NUM_CHIPS,
+							eraseLength/NUM_CHIPS, ALL_CHIPS))
+					{
+						eraseSuccess = true;
+					}
+				}
+			}
+		}
+
+		if (eraseSuccess)
+		{
+			// Not on a sector boundary for erase position and/or length
+			SendByte(ProgrammerErasePortionFinished);
+			curCommandState = WaitingForCommand;
+		}
+		else
+		{
+			// Not on a sector boundary for erase position and/or length
+			SendByte(ProgrammerErasePortionError);
+			curCommandState = WaitingForCommand;
+		}
+	}
 }
 
 // LUFA event handler for when the USB configuration changes.
