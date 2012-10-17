@@ -450,8 +450,8 @@ void USBSerial_HandleErasePortionReadPosLengthByte(uint8_t byte)
 		bool eraseSuccess = false;
 
 		// Ensure they are both within limits of sector size erasure
-		if (((erasePosition & ERASE_SECTOR_SIZE_BYTES) == 0) &&
-			((eraseLength & ERASE_SECTOR_SIZE_BYTES) == 0))
+		if (((erasePosition % ERASE_SECTOR_SIZE_BYTES) == 0) &&
+			((eraseLength % ERASE_SECTOR_SIZE_BYTES) == 0))
 		{
 			uint32_t boundary = eraseLength + erasePosition;
 

@@ -263,9 +263,9 @@ bool ExternalMem_EraseSectors(uint32_t address, uint32_t length, uint8_t chipsMa
 	// Make sure the area requested to be erased is on 64 KB boundaries.
 	// True, the 2 MB SIMM doesn't require 64 KB boundaries, but I'm going to
 	// keep it to 2 MB boundaries to simplify everything.
-#define ERASABLE_SECTOR_SIZE	(64*1024UL*1024UL)
-	if ((address & ERASABLE_SECTOR_SIZE) ||
-		(length & ERASABLE_SECTOR_SIZE))
+#define ERASABLE_SECTOR_SIZE	(64*1024UL)
+	if ((address % ERASABLE_SECTOR_SIZE) ||
+		(length % ERASABLE_SECTOR_SIZE))
 	{
 		return false;
 	}
@@ -274,7 +274,7 @@ bool ExternalMem_EraseSectors(uint32_t address, uint32_t length, uint8_t chipsMa
 
 	if (curChipType == ChipType8BitData_4MBitSize)
 	{
-#define SECTOR_SIZE_4MBIT	(128)
+#define SECTOR_SIZE_4MBIT	(4096)
 		// This chip sucks because you have to erase each sector with its own
 		// complete erase unlock command, which can take a while. At least
 		// individual erase operations are much faster on this chip...
@@ -287,7 +287,7 @@ bool ExternalMem_EraseSectors(uint32_t address, uint32_t length, uint8_t chipsMa
 
 			// Now provide a sector address, but only one. Then the whole
 			// unlock sequence has to be done again after this sector is done.
-			ExternalMem_WriteCycle(address, 0x20202020UL);
+			ExternalMem_WriteCycle(address, 0x30303030UL);
 
 			address += SECTOR_SIZE_4MBIT;
 			length -= SECTOR_SIZE_4MBIT;
@@ -301,7 +301,7 @@ bool ExternalMem_EraseSectors(uint32_t address, uint32_t length, uint8_t chipsMa
 	}
 	else if (curChipType == ChipType8Bit16BitData_16MBitSize)
 	{
-#define SECTOR_SIZE_16MBIT	(64*1024UL*1024UL)
+#define SECTOR_SIZE_16MBIT	(64*1024UL)
 		// This chip is nicer because it can take all the sector addresses at
 		// once and then do the final erase operation in one fell swoop.
 
