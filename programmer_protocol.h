@@ -45,7 +45,8 @@ typedef enum ProgrammerCommand
     SetSIMMTypePLCC32_2MB,
     SetSIMMTypeLarger,
     SetVerifyWhileWriting,
-    SetNoVerifyWhileWriting
+    SetNoVerifyWhileWriting,
+    ErasePortion
 } ProgrammerCommand;
 
 // After a command is sent, the programmer will always respond with
@@ -165,5 +166,22 @@ typedef enum ComputerBootloaderEraseWriteRequest
 	ComputerBootloaderFinish,
 	ComputerBootloaderCancel
 } ComputerBootloaderEraseWriteRequest;
+
+// -------------------------  ERASE PORTION OF CHIP PROTOCOL  -------------------------
+// If the command is ErasePortion, the programmer will reply CommandReplyOK.
+// Next, the program will send the beginning position to erase as a 4-byte little
+// endian integer, followed by the length to erase as a 4-byte little endian
+// integer. The programmer will reply with ProgrammerErasePortionOK to signify
+// that the erase is beginning, followed by ProgrammerErasePortionFinished when
+// everything is done.
+// The length and position to erase must be on 256 KB boundaries and shouldn't
+// go past the end of the selected type of chip. If any error occurs, it will
+// reply with ProgrammerErasePortionError instead.
+typedef enum ProgrammerErasePortionOfChipReply
+{
+	ProgrammerErasePortionOK = 0,
+	ProgrammerErasePortionError,
+	ProgrammerErasePortionFinished
+} ProgrammerErasePortionOfChipReply;
 
 #endif /* PROGRAMMER_PROTOCOL_H_ */

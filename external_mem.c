@@ -256,6 +256,91 @@ void ExternalMem_EraseChips(uint8_t chipsMask)
 	ExternalMem_WaitCompletion(chipsMask);
 }
 
+bool ExternalMem_EraseSectors(uint32_t address, uint32_t length, uint8_t chipsMask)
+{
+	bool result = false;
+
+	// Make sure the area requested to be erased is on 64 KB boundaries.
+	// True, the 2 MB SIMM doesn't require 64 KB boundaries, but I'm going to
+	// keep it to 2 MB boundaries to simplify everything.
+#define ERASABLE_SECTOR_SIZE	(64*1024UL*1024UL)
+	if ((address & ERASABLE_SECTOR_SIZE) ||
+		(length & ERASABLE_SECTOR_SIZE))
+	{
+		return false;
+	}
+
+	// We're good to go. Let's do it.
+
+	if (curChipType == ChipType8BitData_4MBitSize)
+	{
+#define SECTOR_SIZE_4MBIT	(128)
+		// This chip sucks because you have to erase each sector with its own
+		// complete erase unlock command, which can take a while. At least
+		// individual erase operations are much faster on this chip...
+		while (length)
+		{
+			// Start the erase command
+			ExternalMem_UnlockChips(chipsMask);
+			ExternalMem_WriteCycle(0x55555555UL, 0x80808080UL);
+			ExternalMem_UnlockChips(chipsMask);
+
+			// Now provide a sector address, but only one. Then the whole
+			// unlock sequence has to be done again after this sector is done.
+			ExternalMem_WriteCycle(address, 0x20202020UL);
+
+			address += SECTOR_SIZE_4MBIT;
+			length -= SECTOR_SIZE_4MBIT;
+
+			// Wait for completion of this individual erase operation before
+			// we can start a new erase operation.
+			ExternalMem_WaitCompletion(chipsMask);
+		}
+
+		result = true;
+	}
+	else if (curChipType == ChipType8Bit16BitData_16MBitSize)
+	{
+#define SECTOR_SIZE_16MBIT	(64*1024UL*1024UL)
+		// This chip is nicer because it can take all the sector addresses at
+		// once and then do the final erase operation in one fell swoop.
+
+		// Start the erase command
+		ExternalMem_UnlockChips(chipsMask);
+		ExternalMem_WriteCycle(0xAAAAAAAAUL, 0x80808080UL);
+		ExternalMem_UnlockChips(chipsMask);
+
+		// Now provide as many sector addresses as needed to erase.
+
+		// The first address is a bit of a special case because the boot sector
+		// actually has finer granularity for sector sizes.
+		if (address == 0)
+		{
+			ExternalMem_WriteCycle(0x00000000UL, 0x30303030UL);
+			ExternalMem_WriteCycle(0x00004000UL, 0x30303030UL);
+			ExternalMem_WriteCycle(0x00006000UL, 0x30303030UL);
+			ExternalMem_WriteCycle(0x00008000UL, 0x30303030UL);
+			address += SECTOR_SIZE_16MBIT;
+			length -= SECTOR_SIZE_16MBIT;
+		}
+
+		// The remaining sectors can use a more generic algorithm
+		while (length)
+		{
+			ExternalMem_WriteCycle(address, 0x30303030UL);
+			address += SECTOR_SIZE_16MBIT;
+			length -= SECTOR_SIZE_16MBIT;
+		}
+
+		// Wait for completion of the entire erase operation
+		ExternalMem_WaitCompletion(chipsMask);
+
+		result = true;
+	}
+
+	return result;
+}
+
 void ExternalMem_WaitCompletion(uint8_t chipsMask)
 {
 	// Mark the chips not requested as already completed,
@@ -407,4 +492,9 @@ uint8_t ExternalMem_Write(uint32_t startAddress, uint32_t *buf, uint32_t len, ui
 void ExternalMem_SetChipType(ChipType type)
 {
 	curChipType = type;
+}
+
+ChipType ExternalMem_GetChipType(void)
+{
+	return curChipType;
 }

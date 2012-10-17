@@ -94,6 +94,7 @@ void ExternalMem_IdentifyChips(struct ChipID *chips);
 
 // Erases the chips requested
 void ExternalMem_EraseChips(uint8_t chipsMask);
+bool ExternalMem_EraseSectors(uint32_t address, uint32_t length, uint8_t chipsMask);
 
 // Writes a byte to the chips requested at the specified address
 void ExternalMem_WriteByteToChips(uint32_t address, uint32_t data, uint8_t chipsMask);
@@ -107,5 +108,6 @@ uint8_t ExternalMem_Write(uint32_t startAddress, uint32_t *buf, uint32_t len, ui
 
 // Tells which flash command protocol to use
 void ExternalMem_SetChipType(ChipType type);
+ChipType ExternalMem_GetChipType(void);
 
 #endif /* EXTERNAL_MEM_H_ */
