@@ -46,7 +46,9 @@ typedef enum ProgrammerCommand
     SetSIMMTypeLarger,
     SetVerifyWhileWriting,
     SetNoVerifyWhileWriting,
-    ErasePortion
+    ErasePortion,
+    WriteChipsAt,
+    ReadChipsAt
 } ProgrammerCommand;
 
 // After a command is sent, the programmer will always respond with

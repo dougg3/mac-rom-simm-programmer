@@ -56,7 +56,9 @@ typedef enum ProgrammerCommandState
 	ReadingChips,
 	ReadingChipsUnableSendError,
 	WritingChips,
-	ErasePortionReadingPosLength
+	ErasePortionReadingPosLength,
+	ReadingChipsReadStartPos,
+	WritingChipsReadingStartPos,
 } ProgrammerCommandState;
 static ProgrammerCommandState curCommandState = WaitingForCommand;
 
@@ -79,6 +81,8 @@ void USBSerial_SendReadDataChunk(void);
 void USBSerial_HandleWritingChipsByte(uint8_t byte);
 void USBSerial_ElectricalTest_Fail_Handler(uint8_t index1, uint8_t index2);
 void USBSerial_HandleErasePortionReadPosLengthByte(uint8_t byte);
+void USBSerial_HandleReadingChipsReadStartPosByte(uint8_t byte);
+void USBSerial_HandleWritingChipsReadingStartPosByte(uint8_t byte);
 
 // Read/write to USB serial macros -- easier than retyping
 // CDC_Device_XXX(&VirtualSerial_CDC_Interface...) every time
@@ -114,6 +118,12 @@ void USBSerial_Check(void)
 				break;
 			case ErasePortionReadingPosLength:
 				USBSerial_HandleErasePortionReadPosLengthByte((uint8_t)recvByte);
+				break;
+			case ReadingChipsReadStartPos:
+				USBSerial_HandleReadingChipsReadStartPosByte((uint8_t)recvByte);
+				break;
+			case WritingChipsReadingStartPos:
+				USBSerial_HandleWritingChipsReadingStartPosByte((uint8_t)recvByte);
 				break;
 			}
 		}
@@ -166,9 +176,18 @@ void USBSerial_HandleWaitingForCommandByte(uint8_t byte)
 		byteAddressReceiveCount = 0;
 		SendByte(CommandReplyOK);
 		break;
-	// Asked to read all four chips. Set the state, reply with the first chunk
+	// Asked to read all four chips. Set the state, reply with the first chunk.
+	// This will read from the BEGINNING of the SIMM every time. Use
+	// ReadChipsAt to specify a start position
 	case ReadChips:
 		curCommandState = ReadingChipsReadLength;
+		curReadIndex = 0;
+		readLengthByteIndex = 0;
+		readLength = 0;
+		SendByte(CommandReplyOK);
+		break;
+	case ReadChipsAt:
+		curCommandState = ReadingChipsReadStartPos;
 		curReadIndex = 0;
 		readLengthByteIndex = 0;
 		readLength = 0;
@@ -183,6 +202,13 @@ void USBSerial_HandleWaitingForCommandByte(uint8_t byte)
 	case WriteChips:
 		curCommandState = WritingChips;
 		curWriteIndex = 0;
+		writePosInChunk = -1;
+		SendByte(CommandReplyOK);
+		break;
+	case WriteChipsAt:
+		curCommandState = WritingChipsReadingStartPos;
+		curWriteIndex = 0;
+		readLengthByteIndex = 0;
 		writePosInChunk = -1;
 		SendByte(CommandReplyOK);
 		break;
@@ -292,17 +318,19 @@ void USBSerial_HandleReadingChipsReadLengthByte(uint8_t byte)
 	if (++readLengthByteIndex >= 4)
 	{
 		// Ensure it's within limits and a multiple of 1024
-		if ((readLength > NUM_CHIPS * MAX_CHIP_SIZE) ||
+		if ((curReadIndex + readLength > NUM_CHIPS * MAX_CHIP_SIZE) ||
 			(readLength % READ_CHUNK_SIZE_BYTES) ||
-			(readLength == 0))
+			(curReadIndex % READ_CHUNK_SIZE_BYTES) ||
+			(readLength == 0))// Ensure it's within limits and a multiple of 1024
 		{
 			SendByte(ProgrammerReadError);
 			curCommandState = WaitingForCommand;
 		}
 		else
 		{
-			// Convert the length into the number of chunks we need to send
+			// Convert the length/pos into the number of chunks we need to send
 			readLength /= READ_CHUNK_SIZE_BYTES;
+			curReadIndex /= READ_CHUNK_SIZE_BYTES;
 			curCommandState = ReadingChips;
 			SendByte(ProgrammerReadOK);
 			USBSerial_SendReadDataChunk();
@@ -366,14 +394,15 @@ void USBSerial_HandleWritingChipsByte(uint8_t byte)
 		case ComputerWriteMore:
 			writePosInChunk = 0;
 			// Make sure we don't write past the capacity of the chips.
-			if (curWriteIndex < MAX_CHIP_SIZE / (WRITE_CHUNK_SIZE_BYTES/4))
+			if (curWriteIndex < MAX_CHIP_SIZE / (WRITE_CHUNK_SIZE_BYTES/NUM_CHIPS))
 			{
 				SendByte(ProgrammerWriteOK);
 			}
 			else
 			{
+				LED_Off();
 				SendByte(ProgrammerWriteError);
-				// TODO: Enter waiting for command mode?
+				curCommandState = WaitingForCommand;
 			}
 			break;
 		// The computer said that it's done writing.
@@ -398,8 +427,8 @@ void USBSerial_HandleWritingChipsByte(uint8_t byte)
 		{
 			// We filled up the chunk, write it out and confirm it, then wait
 			// for the next command from the computer!
-			uint8_t writeResult = ExternalMem_Write(curWriteIndex * (WRITE_CHUNK_SIZE_BYTES/4),
-					chunks.writeChunks, WRITE_CHUNK_SIZE_BYTES/4, ALL_CHIPS, verifyDuringWrite);
+			uint8_t writeResult = ExternalMem_Write(curWriteIndex * (WRITE_CHUNK_SIZE_BYTES/NUM_CHIPS),
+					chunks.writeChunks, WRITE_CHUNK_SIZE_BYTES/NUM_CHIPS, ALL_CHIPS, verifyDuringWrite);
 
 			// But if we asked to verify, make sure it came out OK.
 			if (verifyDuringWrite && (writeResult != 0))
@@ -497,6 +526,42 @@ void USBSerial_HandleErasePortionReadPosLengthByte(uint8_t byte)
 			// Not on a sector boundary for erase position and/or length
 			SendByte(ProgrammerErasePortionError);
 			curCommandState = WaitingForCommand;
+		}
+	}
+}
+
+void USBSerial_HandleReadingChipsReadStartPosByte(uint8_t byte)
+{
+	// There will be four bytes, so count up until we know the position. If they
+	// have sent all four bytes, then start reading the length
+	curReadIndex |= (((uint32_t)byte) << (8*readLengthByteIndex));
+	if (++readLengthByteIndex >= 4)
+	{
+		readLengthByteIndex = 0;
+		curCommandState = ReadingChipsReadLength;
+	}
+}
+
+void USBSerial_HandleWritingChipsReadingStartPosByte(uint8_t byte)
+{
+	// There will be four bytes, so count up until we know the position. If they
+	// have sent all four bytes, then confirm the write and begin
+	curWriteIndex |= (((uint32_t)byte) << (8*readLengthByteIndex));
+	if (++readLengthByteIndex >= 4)
+	{
+		// Got it...now, is it valid? If so, allow the write to begin
+		if ((curWriteIndex % WRITE_CHUNK_SIZE_BYTES) ||
+			(curWriteIndex >= NUM_CHIPS * MAX_CHIP_SIZE))
+		{
+			SendByte(ProgrammerWriteError);
+			curCommandState = WaitingForCommand;
+		}
+		else
+		{
+			// Convert write size into an index appropriate for rest of code
+			curWriteIndex /= WRITE_CHUNK_SIZE_BYTES;
+			SendByte(ProgrammerWriteOK);
+			curCommandState = WritingChips;
 		}
 	}
 }
