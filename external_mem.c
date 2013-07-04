@@ -199,6 +199,8 @@ void ExternalMem_UnlockChips(uint8_t chipsMask)
 void ExternalMem_IdentifyChips(struct ChipID *chips)
 {
 	// Start by writing the unlock sequence to ALL chips
+	// (don't bother with the chips mask in usb_serial because we're just
+	// temporarily reading ALL chip states here)
 	ExternalMem_UnlockChips(ALL_CHIPS);
 
 	// Write 0x90 to 0x55555555 for the identify command...

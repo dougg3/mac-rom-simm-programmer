@@ -48,7 +48,8 @@ typedef enum ProgrammerCommand
     SetNoVerifyWhileWriting,
     ErasePortion,
     WriteChipsAt,
-    ReadChipsAt
+    ReadChipsAt,
+    SetChipsMask
 } ProgrammerCommand;
 
 // After a command is sent, the programmer will always respond with

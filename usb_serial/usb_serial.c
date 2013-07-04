@@ -51,19 +51,20 @@ void USBSerial_Init(void)
 typedef enum ProgrammerCommandState
 {
 	WaitingForCommand = 0,
-	ReadingByteWaitingForAddress,
+	//ReadingByteWaitingForAddress, // TODO
 	ReadingChipsReadLength,
 	ReadingChips,
-	ReadingChipsUnableSendError,
+	//ReadingChipsUnableSendError, // TODO
 	WritingChips,
 	ErasePortionReadingPosLength,
 	ReadingChipsReadStartPos,
 	WritingChipsReadingStartPos,
+	ReadingChipsMask,
 } ProgrammerCommandState;
 static ProgrammerCommandState curCommandState = WaitingForCommand;
 
 // State info for reading/writing
-static uint8_t byteAddressReceiveCount = 0;
+//static uint8_t byteAddressReceiveCount = 0;
 static uint16_t curReadIndex;
 static uint32_t readLength;
 static uint8_t readLengthByteIndex;
@@ -72,6 +73,7 @@ static uint16_t curWriteIndex = 0;
 static bool verifyDuringWrite = false;
 static uint32_t erasePosition;
 static uint32_t eraseLength;
+static uint8_t chipsMask = ALL_CHIPS;
 
 // Private functions
 void USBSerial_HandleWaitingForCommandByte(uint8_t byte);
@@ -83,6 +85,7 @@ void USBSerial_ElectricalTest_Fail_Handler(uint8_t index1, uint8_t index2);
 void USBSerial_HandleErasePortionReadPosLengthByte(uint8_t byte);
 void USBSerial_HandleReadingChipsReadStartPosByte(uint8_t byte);
 void USBSerial_HandleWritingChipsReadingStartPosByte(uint8_t byte);
+void USBSerial_HandleReadingChipsMaskByte(uint8_t byte);
 
 // Read/write to USB serial macros -- easier than retyping
 // CDC_Device_XXX(&VirtualSerial_CDC_Interface...) every time
@@ -124,6 +127,9 @@ void USBSerial_Check(void)
 				break;
 			case WritingChipsReadingStartPos:
 				USBSerial_HandleWritingChipsReadingStartPosByte((uint8_t)recvByte);
+				break;
+			case ReadingChipsMask:
+				USBSerial_HandleReadingChipsMaskByte((uint8_t)recvByte);
 				break;
 			}
 		}
@@ -172,9 +178,10 @@ void USBSerial_HandleWaitingForCommandByte(uint8_t byte)
 	}
 	// Asked to read a single byte from each SIMM. Change the state and reply.
 	case ReadByte:
-		curCommandState = ReadingByteWaitingForAddress;
+		/*curCommandState = ReadingByteWaitingForAddress;
 		byteAddressReceiveCount = 0;
-		SendByte(CommandReplyOK);
+		SendByte(CommandReplyOK);*/
+		SendByte(CommandReplyInvalid); // not implemented yet
 		break;
 	// Asked to read all four chips. Set the state, reply with the first chunk.
 	// This will read from the BEGINNING of the SIMM every time. Use
@@ -195,7 +202,7 @@ void USBSerial_HandleWaitingForCommandByte(uint8_t byte)
 		break;
 	// Erase the chips and reply OK. (TODO: Sometimes erase might fail)
 	case EraseChips:
-		ExternalMem_EraseChips(ALL_CHIPS);
+		ExternalMem_EraseChips(chipsMask);
 		SendByte(CommandReplyOK);
 		break;
 	// Begin writing the chips. Change the state, reply, wait for chunk of data
@@ -266,6 +273,10 @@ void USBSerial_HandleWaitingForCommandByte(uint8_t byte)
 		eraseLength = 0;
 		erasePosition = 0;
 		curCommandState = ErasePortionReadingPosLength;
+		SendByte(CommandReplyOK);
+		break;
+	case SetChipsMask:
+		curCommandState = ReadingChipsMask;
 		SendByte(CommandReplyOK);
 		break;
 	// We don't know what this command is, so reply that it was invalid.
@@ -362,7 +373,8 @@ void USBSerial_SendReadDataChunk(void)
 	// increment our pointer so we know the next chunk of data to send.
 	if (retVal != ENDPOINT_RWSTREAM_NoError)
 	{
-		curCommandState = ReadingChipsUnableSendError;
+		//curCommandState = ReadingChipsUnableSendError; // TODO: not implemented
+		curCommandState = WaitingForCommand;
 	}
 	else
 	{
@@ -428,7 +440,7 @@ void USBSerial_HandleWritingChipsByte(uint8_t byte)
 			// We filled up the chunk, write it out and confirm it, then wait
 			// for the next command from the computer!
 			uint8_t writeResult = ExternalMem_Write(curWriteIndex * (WRITE_CHUNK_SIZE_BYTES/NUM_CHIPS),
-					chunks.writeChunks, WRITE_CHUNK_SIZE_BYTES/NUM_CHIPS, ALL_CHIPS, verifyDuringWrite);
+					chunks.writeChunks, WRITE_CHUNK_SIZE_BYTES/NUM_CHIPS, chipsMask, verifyDuringWrite);
 
 			// But if we asked to verify, make sure it came out OK.
 			if (verifyDuringWrite && (writeResult != 0))
@@ -493,7 +505,7 @@ void USBSerial_HandleErasePortionReadPosLengthByte(uint8_t byte)
 					SendByte(ProgrammerErasePortionOK);
 					CDC_Device_Flush(&VirtualSerial_CDC_Interface);
 					if (ExternalMem_EraseSectors(erasePosition/NUM_CHIPS,
-							eraseLength/NUM_CHIPS, ALL_CHIPS))
+							eraseLength/NUM_CHIPS, chipsMask))
 					{
 						eraseSuccess = true;
 					}
@@ -507,7 +519,7 @@ void USBSerial_HandleErasePortionReadPosLengthByte(uint8_t byte)
 					SendByte(ProgrammerErasePortionOK);
 					CDC_Device_Flush(&VirtualSerial_CDC_Interface);
 					if (ExternalMem_EraseSectors(erasePosition/NUM_CHIPS,
-							eraseLength/NUM_CHIPS, ALL_CHIPS))
+							eraseLength/NUM_CHIPS, chipsMask))
 					{
 						eraseSuccess = true;
 					}
@@ -564,6 +576,25 @@ void USBSerial_HandleWritingChipsReadingStartPosByte(uint8_t byte)
 			curCommandState = WritingChips;
 		}
 	}
+}
+
+void USBSerial_HandleReadingChipsMaskByte(uint8_t byte)
+{
+	// Single byte follows containing mask of chips we're programming
+	if (byte <= 0x0F)
+	{
+		// Mask has to be less than or equal to 0x0F because there are only
+		// four valid mask bits.
+		chipsMask = byte;
+		SendByte(CommandReplyOK);
+	}
+	else
+	{
+		SendByte(CommandReplyError);
+	}
+
+	// Done either way; now we're waiting for a command to arrive
+	curCommandState = WaitingForCommand;
 }
 
 // LUFA event handler for when the USB configuration changes.
