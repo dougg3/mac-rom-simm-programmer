@@ -4,4 +4,4 @@ Schematics and PCB layouts for the ROM SIMM and the ROM SIMM programmer are also
 
 No ROM images will be distributed; this is a tool for personal exploration.
 
-![http://wiki.mac-rom-simm-programmer.googlecode.com/git-history/master/IMG_0587_shrunk_more.jpg](http://wiki.mac-rom-simm-programmer.googlecode.com/git-history/master/IMG_0587_shrunk_more.jpg)
+![IMG_0587_shrunk_more.jpg](IMG_0587_shrunk_more.jpg)

@@ -21,8 +21,8 @@ cd SIMMProgrammer
 Get the source code you need:
 
 ```
-git clone https://code.google.com/p/mac-rom-simm-programmer.software/
-hg clone https://code.google.com/r/doug-qextserialport-linuxnotifications
+git clone https://github.com/dougg3/mac-rom-simm-programmer.software.git
+git clone https://github.com/dougg3/doug-qextserialport-linuxnotifications.git
 ```
 
 Compile it:
