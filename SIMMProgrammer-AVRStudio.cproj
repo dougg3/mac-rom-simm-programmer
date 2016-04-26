@@ -1,0 +1,172 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectVersion>5.1</ProjectVersion>
+    <ToolchainName>com.Atmel.AVRGCC8</ToolchainName>
+    <ProjectGuid>{a831f317-ab11-4e59-8fcf-0e48824ce1ba}</ProjectGuid>
+    <avrdevice>AT90USB646</avrdevice>
+    <avrdeviceseries>none</avrdeviceseries>
+    <OutputType>Executable</OutputType>
+    <Language>C</Language>
+    <OutputFileName>$(MSBuildProjectName)</OutputFileName>
+    <OutputFileExtension>.elf</OutputFileExtension>
+    <OutputDirectory>$(MSBuildProjectDirectory)\$(Configuration)</OutputDirectory>
+    <AssemblyName>programmer-firmware</AssemblyName>
+    <Name>SIMMProgrammer-AVRStudio</Name>
+    <RootNamespace>programmer-firmware</RootNamespace>
+    <ToolchainFlavour>Native</ToolchainFlavour>
+    <AsfVersion>2.11.1</AsfVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <ToolchainSettings>
+      <AvrGcc>
+  <avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>
+  <avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>
+  <avrgcc.compiler.symbols.DefSymbols>
+    <ListValues>
+      <Value>USB_DEVICE_ONLY</Value>
+      <Value>F_USB=16000000</Value>
+      <Value>DEVICE_STATE_AS_GPIOR=0</Value>
+      <Value>ORDERED_EP_CONFIG</Value>
+      <Value>FIXED_CONTROL_ENDPOINT_SIZE=8</Value>
+      <Value>FIXED_NUM_CONFIGURATIONS=1</Value>
+      <Value>USE_FLASH_DESCRIPTORS</Value>
+      <Value>USE_STATIC_OPTIONS="(USB_DEVICE_OPT_FULLSPEED | USB_OPT_REG_ENABLED | USB_OPT_AUTO_PLL)"</Value>
+      <Value>F_CPU=16000000</Value>
+    </ListValues>
+  </avrgcc.compiler.symbols.DefSymbols>
+  <avrgcc.compiler.optimization.level>Optimize for size (-Os)</avrgcc.compiler.optimization.level>
+  <avrgcc.compiler.optimization.PrepareFunctionsForGarbageCollection>True</avrgcc.compiler.optimization.PrepareFunctionsForGarbageCollection>
+  <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
+  <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>
+  <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
+  <avrgcc.compiler.warnings.WarningsAsErrors>True</avrgcc.compiler.warnings.WarningsAsErrors>
+  <avrgcc.linker.libraries.Libraries>
+    <ListValues>
+      <Value>m</Value>
+    </ListValues>
+  </avrgcc.linker.libraries.Libraries>
+  <avrgcc.linker.optimization.GarbageCollectUnusedSections>True</avrgcc.linker.optimization.GarbageCollectUnusedSections>
+</AvrGcc>
+    </ToolchainSettings>
+    <PostBuildEvent>"$(AVRSTUDIO_EXE_PATH)\extensions\Atmel\AVRGCC\3.3.1.27\AVRToolchain\bin\avr-objcopy" -R .eeprom -R .fuse -R .lock -R .signature  -O binary $(OutputFileName)$(OutputFileExtension) $(OutputFileName).bin</PostBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <ToolchainSettings>
+      <AvrGcc>
+  <avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>
+  <avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>
+  <avrgcc.compiler.symbols.DefSymbols>
+    <ListValues>
+      <Value>USB_DEVICE_ONLY</Value>
+      <Value>F_USB=16000000</Value>
+      <Value>DEVICE_STATE_AS_GPIOR=0</Value>
+      <Value>ORDERED_EP_CONFIG</Value>
+      <Value>FIXED_CONTROL_ENDPOINT_SIZE=8</Value>
+      <Value>FIXED_NUM_CONFIGURATIONS=1</Value>
+      <Value>USE_FLASH_DESCRIPTORS</Value>
+      <Value>USE_STATIC_OPTIONS="(USB_DEVICE_OPT_FULLSPEED | USB_OPT_REG_ENABLED | USB_OPT_AUTO_PLL)"</Value>
+      <Value>F_CPU=16000000</Value>
+    </ListValues>
+  </avrgcc.compiler.symbols.DefSymbols>
+  <avrgcc.compiler.optimization.level>Optimize (-O1)</avrgcc.compiler.optimization.level>
+  <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
+  <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>
+  <avrgcc.compiler.optimization.DebugLevel>Default (-g2)</avrgcc.compiler.optimization.DebugLevel>
+  <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
+  <avrgcc.linker.libraries.Libraries>
+    <ListValues>
+      <Value>m</Value>
+    </ListValues>
+  </avrgcc.linker.libraries.Libraries>
+  <avrgcc.assembler.debugging.DebugLevel>Default (-g2)</avrgcc.assembler.debugging.DebugLevel>
+</AvrGcc>
+    </ToolchainSettings>
+    <PostBuildEvent>"$(AVRSTUDIO_EXE_PATH)\extensions\Atmel\AVRGCC\3.3.1.27\AVRToolchain\bin\avr-objcopy" -R .eeprom -R .fuse -R .lock -R .signature  -O binary $(OutputFileName)$(OutputFileExtension) $(OutputFileName).bin</PostBuildEvent>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="cdc_device_definition.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="cdc_device_definition.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="Descriptors.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="external_mem.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="external_mem.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="led.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="main.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="mcp23s17.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="mcp23s17.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="ports.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="ports.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="usb_serial\usb_serial.c">
+      <SubType>compile</SubType>
+      <Link>usb_serial.c</Link>
+    </Compile>
+    <Compile Include="usb_serial\usb_serial.h">
+      <SubType>compile</SubType>
+      <Link>usb_serial.h</Link>
+    </Compile>
+    <Compile Include="tests\simm_electrical_test.c">
+      <SubType>compile</SubType>
+      <Link>simm_electrical_test.c</Link>
+    </Compile>
+    <Compile Include="tests\simm_electrical_test.h">
+      <SubType>compile</SubType>
+      <Link>simm_electrical_test.h</Link>
+    </Compile>
+    <Compile Include="LUFA\Drivers\USB\Class\Device\CDCClassDevice.c">
+      <SubType>compile</SubType>
+      <Link>CDCClassDevice.c</Link>
+    </Compile>
+    <Compile Include="LUFA\Drivers\USB\Core\USBTask.c">
+      <SubType>compile</SubType>
+      <Link>USBTask.c</Link>
+    </Compile>
+    <Compile Include="LUFA\Drivers\USB\Core\Events.c">
+      <SubType>compile</SubType>
+      <Link>Events.c</Link>
+    </Compile>
+    <Compile Include="LUFA\Drivers\USB\Core\DeviceStandardReq.c">
+      <SubType>compile</SubType>
+      <Link>DeviceStandardReq.c</Link>
+    </Compile>
+    <Compile Include="LUFA\Drivers\USB\Core\AVR8\USBController_AVR8.c">
+      <SubType>compile</SubType>
+      <Link>USBController_AVR8.c</Link>
+    </Compile>
+    <Compile Include="LUFA\Drivers\USB\Core\AVR8\USBInterrupt_AVR8.c">
+      <SubType>compile</SubType>
+      <Link>USBInterrupt_AVR8.c</Link>
+    </Compile>
+    <Compile Include="LUFA\Drivers\USB\Core\AVR8\Endpoint_AVR8.c">
+      <SubType>compile</SubType>
+      <Link>Endpoint_AVR8.c</Link>
+    </Compile>
+    <Compile Include="LUFA\Drivers\USB\Core\AVR8\EndpointStream_AVR8.c">
+      <SubType>compile</SubType>
+      <Link>EndpointStream_AVR8.c</Link>
+    </Compile>
+  </ItemGroup>
+  <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />
+</Project>

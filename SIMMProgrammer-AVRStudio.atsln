@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# AvrStudio Solution File, Format Version 11.00
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "SIMMProgrammer-AVRStudio", "SIMMProgrammer-AVRStudio.cproj", "{A831F317-AB11-4E59-8FCF-0E48824CE1BA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|AVR = Debug|AVR
+		Release|AVR = Release|AVR
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A831F317-AB11-4E59-8FCF-0E48824CE1BA}.Debug|AVR.ActiveCfg = Debug|AVR
+		{A831F317-AB11-4E59-8FCF-0E48824CE1BA}.Debug|AVR.Build.0 = Debug|AVR
+		{A831F317-AB11-4E59-8FCF-0E48824CE1BA}.Release|AVR.ActiveCfg = Release|AVR
+		{A831F317-AB11-4E59-8FCF-0E48824CE1BA}.Release|AVR.Build.0 = Release|AVR
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
