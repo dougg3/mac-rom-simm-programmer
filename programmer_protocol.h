@@ -22,13 +22,11 @@
  *
  */
 
-
-
 #ifndef PROGRAMMER_PROTOCOL_H_
 #define PROGRAMMER_PROTOCOL_H_
 
-// When the programmer is in "waiting for command" mode,
-// you send it one of the bytes below to do something (or begin to do something)
+/// When the programmer is in "waiting for command" mode,
+/// you send it one of the bytes below to do something (or begin to do something)
 typedef enum ProgrammerCommand
 {
 	EnterWaitingMode = 0,

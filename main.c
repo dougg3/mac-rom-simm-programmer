@@ -20,41 +20,51 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
+ * -----------------------------------------------------------------------------
+ *
+ * TODO: Add smarter short detection? Automatically run an electrical test at
+ *       startup and leave everything in input mode if shorts are detected?
+ *       I'm especially thinking about the case of SIMM control pins shorted
+ *       together, like CS and OE, which will default to opposite output values.
+ *       Is this even worth implementing? It's probably only useful when testing
+ *       newly-built SIMMs. We would need to implement a protocol for this so
+ *       the programmer software can be alerted that a short was detected.
  */
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <util/delay.h>
-#include "external_mem.h"
+#include "hal/board.h"
+#include "hardware.h"
+#include "hal/parallel_bus.h"
 #include "tests/simm_electrical_test.h"
-#include "usb_serial/usb_serial.h"
+#include "simm_programmer.h"
 #include "led.h"
 
+/** Main function
+ *
+ * @return Never; the main loop is an infinite loop.
+ */
 int main(void)
 {
-	cli();
-
+	DisableInterrupts();
+	Board_Init();
 	LED_Init();
 
 	// If there was a brownout detected, turn on the LED momentarily
-	if (MCUSR & (1 << BORF))
+	if (Board_BrownoutDetected())
 	{
-		MCUSR = 0;
 		LED_On();
-		_delay_ms(500);
+		DelayMS(500);
 		LED_Off();
 	}
 
-	ExternalMem_Init();
-	ExternalMem_SetAddress(0);
-	ExternalMem_Assert(SIMM_CS | SIMM_OE);
-	ExternalMem_Deassert(SIMM_WE);
-	USBSerial_Init();
-	sei();
+	// Initialize everything and turn on interrupts
+	ParallelBus_Init();
+	SIMMProgrammer_Init();
+	EnableInterrupts();
 
+	// Main loop
 	while (1)
 	{
-		USBSerial_Check();
+		SIMMProgrammer_Check();
 	}
 
 	return 0;

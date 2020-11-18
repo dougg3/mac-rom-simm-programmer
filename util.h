@@ -1,10 +1,10 @@
 /*
- * usb_serial.h
+ * util.h
  *
- *  Created on: Dec 9, 2011
+ *  Created on: Nov 25, 2020
  *      Author: Doug
  *
- * Copyright (C) 2011-2012 Doug Brown
+ * Copyright (C) 2011-2020 Doug Brown
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,10 +22,10 @@
  *
  */
 
-#ifndef USB_SERIAL_H_
-#define USB_SERIAL_H_
+#ifndef UTIL_H_
+#define UTIL_H_
 
-void USBSerial_Init(void);
-void USBSerial_Check(void);
+/// Macro so we don't have to repeat this monstrosity multiple times
+#define ALWAYS_INLINE			__attribute__ ((__always_inline__)) inline
 
-#endif /* USB_SERIAL_H_ */
+#endif /* UTIL_H_ */

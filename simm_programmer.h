@@ -1,7 +1,7 @@
 /*
- * cdc_device_definition.c
+ * simm_programmer.h
  *
- *  Created on: Dec 26, 2011
+ *  Created on: Dec 9, 2011
  *      Author: Doug
  *
  * Copyright (C) 2011-2012 Doug Brown
@@ -22,25 +22,10 @@
  *
  */
 
-#include "LUFA/Drivers/USB/USB.h"
-#include "Descriptors.h"
+#ifndef SIMM_PROGRAMMER_H_
+#define SIMM_PROGRAMMER_H_
 
-USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface =
-{
-	.Config =
-		{
-			.ControlInterfaceNumber         = 0,
+void SIMMProgrammer_Init(void);
+void SIMMProgrammer_Check(void);
 
-			.DataINEndpointNumber           = CDC_TX_EPNUM,
-			.DataINEndpointSize             = CDC_TXRX_EPSIZE,
-			.DataINEndpointDoubleBank       = true,
-
-			.DataOUTEndpointNumber          = CDC_RX_EPNUM,
-			.DataOUTEndpointSize            = CDC_TXRX_EPSIZE,
-			.DataOUTEndpointDoubleBank      = true,
-
-			.NotificationEndpointNumber     = CDC_NOTIFICATION_EPNUM,
-			.NotificationEndpointSize       = CDC_NOTIFICATION_EPSIZE,
-			.NotificationEndpointDoubleBank = false,
-		},
-};
+#endif /* SIMM_PROGRAMMER_H_ */

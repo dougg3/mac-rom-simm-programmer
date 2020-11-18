@@ -1,7 +1,7 @@
 /*
- * mcp23s17.h
+ * cdc_device_definition.c
  *
- *  Created on: Nov 25, 2011
+ *  Created on: Dec 26, 2011
  *      Author: Doug
  *
  * Copyright (C) 2011-2012 Doug Brown
@@ -22,18 +22,25 @@
  *
  */
 
-#ifndef MCP23S17_H_
-#define MCP23S17_H_
+#include "LUFA/Drivers/USB/USB.h"
+#include "Descriptors.h"
 
-#include <stdint.h>
+/// Configuration info for the USB CDC serial interface
+USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface =
+{
+	.Config = {
+		.ControlInterfaceNumber         = 0,
 
-void MCP23S17_Init();
-void MCP23S17_SetDDR(uint16_t ddr);
-void MCP23S17_SetPins(uint16_t data);
-uint16_t MCP23S17_ReadPins(void);
-void MCP23S17_SetPullups(uint16_t pullups);
-uint16_t MCP23S17_GetOutputs(void);
-uint16_t MCP23S17_GetDDR(void);
-uint16_t MCP23S17_GetPullups(void);
+		.DataINEndpointNumber           = CDC_TX_EPNUM,
+		.DataINEndpointSize             = CDC_TXRX_EPSIZE,
+		.DataINEndpointDoubleBank       = true,
 
-#endif /* MCP23S17_H_ */
+		.DataOUTEndpointNumber          = CDC_RX_EPNUM,
+		.DataOUTEndpointSize            = CDC_TXRX_EPSIZE,
+		.DataOUTEndpointDoubleBank      = true,
+
+		.NotificationEndpointNumber     = CDC_NOTIFICATION_EPNUM,
+		.NotificationEndpointSize       = CDC_NOTIFICATION_EPSIZE,
+		.NotificationEndpointDoubleBank = false,
+	},
+};

@@ -8,12 +8,41 @@
 #ifndef LED_H_
 #define LED_H_
 
-#include <avr/io.h>
-#define PIN_MASK				(1 << 7)
+#include "hal/board.h"
+#include "hal/gpio.h"
 
-#define LED_Init()				do { DDRD |= PIN_MASK; LED_Off(); } while (0)
-#define LED_On()				PORTD |= PIN_MASK
-#define LED_Off()				PORTD &= ~PIN_MASK
-#define LED_Toggle()			PIND = PIN_MASK
+/** Initializes the LED and turns it off
+ *
+ */
+static inline void LED_Init(void)
+{
+	GPIOPin ledPin = Board_LEDPin();
+	GPIO_SetDirection(ledPin, true);
+	GPIO_SetOff(ledPin);
+}
+
+/** Turns the LED on
+ *
+ */
+static inline void LED_On(void)
+{
+	GPIO_SetOn(Board_LEDPin());
+}
+
+/** Turns the LED off
+ *
+ */
+static inline void LED_Off(void)
+{
+	GPIO_SetOff(Board_LEDPin());
+}
+
+/** Toggles the LED
+ *
+ */
+static inline void LED_Toggle(void)
+{
+	GPIO_Toggle(Board_LEDPin());
+}
 
 #endif /* LED_H_ */
