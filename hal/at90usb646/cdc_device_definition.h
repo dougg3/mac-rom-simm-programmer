@@ -4,7 +4,7 @@
  *  Created on: Dec 26, 2011
  *      Author: Doug
  *
- * Copyright (C) 2011-2012 Doug Brown
+ * Copyright (C) 2011-2020 Doug Brown
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
