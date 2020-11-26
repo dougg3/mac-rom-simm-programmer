@@ -27,12 +27,13 @@
 
 #include "LUFA/Drivers/USB/USB.h"
 #include "cdc_device_definition.h"
+#include "../../util.h"
 
 /** Sends a byte over the USB CDC serial port
  *
  * @param byte The byte to send
  */
-static __attribute__((always_inline)) inline void USBCDC_SendByte(uint8_t byte)
+static ALWAYS_INLINE void USBCDC_SendByte(uint8_t byte)
 {
 	CDC_Device_SendByte(&VirtualSerial_CDC_Interface, byte);
 }
@@ -43,7 +44,7 @@ static __attribute__((always_inline)) inline void USBCDC_SendByte(uint8_t byte)
  * @param len The number of bytes
  * @return True on success, false on failure
  */
-static __attribute__((always_inline)) inline bool USBCDC_SendData(uint8_t const *data, uint16_t len)
+static ALWAYS_INLINE bool USBCDC_SendData(uint8_t const *data, uint16_t len)
 {
 	return CDC_Device_SendData(&VirtualSerial_CDC_Interface, (char const *)data, len) == ENDPOINT_RWSTREAM_NoError;
 }
@@ -52,15 +53,29 @@ static __attribute__((always_inline)) inline bool USBCDC_SendData(uint8_t const 
  *
  * @return The byte read, or -1 if there are no bytes available
  */
-static __attribute__((always_inline)) inline int16_t USBCDC_ReadByte(void)
+static ALWAYS_INLINE int16_t USBCDC_ReadByte(void)
 {
 	return CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
+}
+
+/** Reads a byte from the USB CDC serial port. Blocks until one is available.
+ *
+ * @return The byte read
+ */
+static ALWAYS_INLINE uint8_t USBCDC_ReadByteBlocking(void)
+{
+	int16_t b;
+	do
+	{
+		b = USBCDC_ReadByte();
+	} while (b < 0);
+	return (uint8_t)b;
 }
 
 /** Forces any transmitted data to be sent over USB immediately
  *
  */
-static __attribute__((always_inline)) inline void USBCDC_Flush(void)
+static ALWAYS_INLINE inline void USBCDC_Flush(void)
 {
 	CDC_Device_Flush(&VirtualSerial_CDC_Interface);
 }

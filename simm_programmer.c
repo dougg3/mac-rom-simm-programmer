@@ -422,82 +422,84 @@ static void SIMMProgrammer_HandleWritingChipsByte(uint8_t byte)
 	}
 	else // Interpret the incoming byte as data to write to the SIMM.
 	{
-		// Save the byte, and check if we've filled up an entire chunk
+		// Save the byte. Then, block until we receive the rest of the data.
 		writeChunks.bytes[writePosInChunk++] = byte;
-		if (writePosInChunk >= READ_WRITE_CHUNK_SIZE_BYTES)
+		while (writePosInChunk < READ_WRITE_CHUNK_SIZE_BYTES)
 		{
-			// We filled up the chunk, write it out and confirm it, then wait
-			// for the next command from the computer!
-			if (chipsMask == ALL_CHIPS)
-			{
-				ParallelFlash_WriteAllChips(curWriteIndex * (READ_WRITE_CHUNK_SIZE_BYTES/PARALLEL_FLASH_NUM_CHIPS),
-											writeChunks.words, READ_WRITE_CHUNK_SIZE_BYTES/PARALLEL_FLASH_NUM_CHIPS);
-			}
-			else
-			{
-				ParallelFlash_WriteSomeChips(curWriteIndex * (READ_WRITE_CHUNK_SIZE_BYTES/PARALLEL_FLASH_NUM_CHIPS),
-											 writeChunks.words, READ_WRITE_CHUNK_SIZE_BYTES/PARALLEL_FLASH_NUM_CHIPS, chipsMask);
-			}
+			writeChunks.bytes[writePosInChunk++] = USBCDC_ReadByteBlocking();
+		}
 
-			// Verify if we were asked to.
-			uint8_t badVerifyChipsMask = 0;
-			if (verifyDuringWrite)
-			{
-				// Read back a chunk
-				ParallelFlash_Read(curWriteIndex * (READ_WRITE_CHUNK_SIZE_BYTES/PARALLEL_FLASH_NUM_CHIPS),
-								   readChunks.words, READ_WRITE_CHUNK_SIZE_BYTES/PARALLEL_FLASH_NUM_CHIPS);
+		// We filled up the chunk, write it out and confirm it, then wait
+		// for the next command from the computer!
+		if (chipsMask == ALL_CHIPS)
+		{
+			ParallelFlash_WriteAllChips(curWriteIndex * (READ_WRITE_CHUNK_SIZE_BYTES/PARALLEL_FLASH_NUM_CHIPS),
+										writeChunks.words, READ_WRITE_CHUNK_SIZE_BYTES/PARALLEL_FLASH_NUM_CHIPS);
+		}
+		else
+		{
+			ParallelFlash_WriteSomeChips(curWriteIndex * (READ_WRITE_CHUNK_SIZE_BYTES/PARALLEL_FLASH_NUM_CHIPS),
+										 writeChunks.words, READ_WRITE_CHUNK_SIZE_BYTES/PARALLEL_FLASH_NUM_CHIPS, chipsMask);
+		}
 
-				// Compare the readback to what we attempted to flash.
-				// Look at each chip
-				for (uint8_t chip = 0; chip < PARALLEL_FLASH_NUM_CHIPS; chip++)
+		// Verify if we were asked to.
+		uint8_t badVerifyChipsMask = 0;
+		if (verifyDuringWrite)
+		{
+			// Read back a chunk
+			ParallelFlash_Read(curWriteIndex * (READ_WRITE_CHUNK_SIZE_BYTES/PARALLEL_FLASH_NUM_CHIPS),
+							   readChunks.words, READ_WRITE_CHUNK_SIZE_BYTES/PARALLEL_FLASH_NUM_CHIPS);
+
+			// Compare the readback to what we attempted to flash.
+			// Look at each chip
+			for (uint8_t chip = 0; chip < PARALLEL_FLASH_NUM_CHIPS; chip++)
+			{
+				uint16_t bytePos = chip;
+				uint8_t thisChipMask = 1 << chip;
+				// Loop over all bytes that are on this chip
+				for (uint16_t i = 0; i < READ_WRITE_CHUNK_SIZE_BYTES/PARALLEL_FLASH_NUM_CHIPS; i++)
 				{
-					uint16_t bytePos = chip;
-					uint8_t thisChipMask = 1 << chip;
-					// Loop over all bytes that are on this chip
-					for (uint16_t i = 0; i < READ_WRITE_CHUNK_SIZE_BYTES/PARALLEL_FLASH_NUM_CHIPS; i++)
+					if (writeChunks.bytes[bytePos] != readChunks.bytes[bytePos])
 					{
-						if (writeChunks.bytes[bytePos] != readChunks.bytes[bytePos])
-						{
-							badVerifyChipsMask |= thisChipMask;
-						}
-						bytePos += PARALLEL_FLASH_NUM_CHIPS;
+						badVerifyChipsMask |= thisChipMask;
 					}
+					bytePos += PARALLEL_FLASH_NUM_CHIPS;
 				}
-
-				// Filter out chips we didn't care about
-				badVerifyChipsMask &= chipsMask;
 			}
 
-			// Bail if verification failed
-			if (badVerifyChipsMask != 0)
+			// Filter out chips we didn't care about
+			badVerifyChipsMask &= chipsMask;
+		}
+
+		// Bail if verification failed
+		if (badVerifyChipsMask != 0)
+		{
+			// Verification failed. The mask we calculated is actually
+			// backwards. We need to reverse it when we transmit the IC
+			// status back to the programmer software. This is kind of silly
+			// but it's too late to update the protocol.
+			uint8_t actualBadMask = 0;
+			for (uint8_t i = 0; i < PARALLEL_FLASH_NUM_CHIPS; i++)
 			{
-				// Verification failed. The mask we calculated is actually
-				// backwards. We need to reverse it when we transmit the IC
-				// status back to the programmer software. This is kind of silly
-				// but it's too late to update the protocol.
-				uint8_t actualBadMask = 0;
-				for (uint8_t i = 0; i < PARALLEL_FLASH_NUM_CHIPS; i++)
+				if (badVerifyChipsMask & (1 << i))
 				{
-					if (badVerifyChipsMask & (1 << i))
-					{
-						actualBadMask |= 0x80;
-					}
-					actualBadMask >>= 1;
+					actualBadMask |= 0x80;
 				}
+				actualBadMask >>= 1;
+			}
 
-				// Uh oh -- verification failure.
-				LED_Off();
-				// Send the fail bit along with a mask of failed chips.
-				USBCDC_SendByte(ProgrammerWriteVerificationError | badVerifyChipsMask);
-				curCommandState = WaitingForCommand;
-			}
-			else
-			{
-				USBCDC_SendByte(ProgrammerWriteOK);
-				curWriteIndex++;
-				writePosInChunk = -1;
-				LED_Toggle();
-			}
+			// Uh oh -- verification failure.
+			LED_Off();
+			// Send the fail bit along with a mask of failed chips.
+			USBCDC_SendByte(ProgrammerWriteVerificationError | badVerifyChipsMask);
+			curCommandState = WaitingForCommand;
+		}
+		else
+		{
+			USBCDC_SendByte(ProgrammerWriteOK);
+			curWriteIndex++;
+			writePosInChunk = -1;
+			LED_Toggle();
 		}
 	}
 }

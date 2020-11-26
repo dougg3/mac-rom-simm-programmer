@@ -36,6 +36,7 @@ void USBCDC_Check(void);
 //void USBCDC_SendByte(uint8_t byte);
 //bool USBCDC_SendData(uint8_t const *data, uint16_t len);
 //int16_t USBCDC_ReadByte(void);
+//uint8_t USBCDC_ReadByteBlocking(void);
 //void USBCDC_Flush(void)
 
 #endif /* HAL_USBCDC_H_ */
