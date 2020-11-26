@@ -132,17 +132,17 @@ void ParallelBus_SetAddress(uint32_t address)
 	// inputs, this function might mess with their pull-up resistors.
 	// Only use it under normal operation when all the address pins are being
 	// used as outputs.
-    union {
-        uint32_t addr;
-        uint8_t addrBytes[4];
-    } u;
+	union {
+		uint32_t addr;
+		uint8_t addrBytes[4];
+	} u;
 
-    u.addr = address;
+	u.addr = address;
 	PORTA = u.addrBytes[0]; // A0-A7
 	PORTC = u.addrBytes[1]; // A8-A15
 	// A16-A20 are special because they are split up...(We use PORTD pins 0, 1, 4, 5, 6)
 	u.addrBytes[2] = (u.addrBytes[2] & 0x03) | (uint8_t)((u.addrBytes[2] & 0x1C) << 2) | (PORTD & 0x8C);
-    PORTD = u.addrBytes[2];
+	PORTD = u.addrBytes[2];
 }
 
 /** Sets the output data on the 32-bit data bus
@@ -158,15 +158,15 @@ void ParallelBus_SetData(uint32_t data)
 	// function might mess with their pull-up resistors.
 	// Only use it under normal operation when all the data pins are being
 	// used as outputs
-    union {
-        uint32_t data;
-        uint16_t dataShorts[2];
-        uint8_t dataBytes[4];
-    } u;
-    u.data = data;
+	union {
+		uint32_t data;
+		uint16_t dataShorts[2];
+		uint8_t dataBytes[4];
+	} u;
+	u.data = data;
 
-    // Doing the AVR registers first makes it so we don't have to use the stack
-    // (at least according to my testing with avr-gcc)
+	// Doing the AVR registers first makes it so we don't have to use the stack
+	// (at least according to my testing with avr-gcc)
 	PORTE = u.dataBytes[1]; // D16-D23
 	PORTF = u.dataBytes[0]; // D24-D31
 
@@ -235,15 +235,15 @@ void ParallelBus_SetAddressDir(uint32_t outputs)
  */
 void ParallelBus_SetDataDir(uint32_t outputs)
 {
-    union {
-        uint32_t data;
-        uint16_t dataShorts[2];
-        uint8_t dataBytes[4];
-    } u;
-    u.data = outputs;
+	union {
+		uint32_t data;
+		uint16_t dataShorts[2];
+		uint8_t dataBytes[4];
+	} u;
+	u.data = outputs;
 
-    // Doing the AVR registers first makes it so we don't have to use the stack
-    DDRE = u.dataBytes[1]; // D16-D23
+	// Doing the AVR registers first makes it so we don't have to use the stack
+	DDRE = u.dataBytes[1]; // D16-D23
 	DDRF = u.dataBytes[0]; // D24-D31
 
 	// D0-D15 are part of the MCP23S17
@@ -327,12 +327,12 @@ void ParallelBus_SetDataPullups(uint32_t pullups)
 	// NOTE: If any pins of PORTE or PORTF are set as outputs, this
 	// function might mess with their output values.
 	// Only use it when all the data pins are being used as inputs
-    union {
-        uint32_t data;
-        uint16_t dataShorts[2];
-        uint8_t dataBytes[4];
-    } u;
-    u.data = pullups;
+	union {
+		uint32_t data;
+		uint16_t dataShorts[2];
+		uint8_t dataBytes[4];
+	} u;
+	u.data = pullups;
 
 	PORTE = u.dataBytes[1]; // D16-D23
 	PORTF = u.dataBytes[0]; // D24-D31
@@ -400,11 +400,11 @@ uint32_t ParallelBus_ReadAddress(void)
  */
 uint32_t ParallelBus_ReadData(void)
 {
-    union {
-        uint32_t data;
-        uint16_t dataShorts[2];
-        uint8_t dataBytes[4];
-    } u;
+	union {
+		uint32_t data;
+		uint16_t dataShorts[2];
+		uint8_t dataBytes[4];
+	} u;
 
 	u.dataShorts[1] = MCP23S17_ReadInputs(&mcp23s17);
 
@@ -464,17 +464,17 @@ void ParallelBus_WriteCycle(uint32_t address, uint32_t data)
 {
 	// Using this union surprisingly speeds things up when assembling or
 	// interpreting a uint32_t on the AVR.
-    union {
-        uint32_t word;
-        uint8_t bytes[4];
-    } u;
+	union {
+		uint32_t word;
+		uint8_t bytes[4];
+	} u;
 
-    // We should currently be in a state of "CS is asserted, OE/WE not asserted".
-    // As an optimization, operate under that assumption.
+	// We should currently be in a state of "CS is asserted, OE/WE not asserted".
+	// As an optimization, operate under that assumption.
 
 	// Set address. This is basically the exact same code as ParallelBus_SetAddress,
 	// but repeated in here so we don't have any function call overhead.
-    u.word = address;
+	u.word = address;
 	PORTA = u.bytes[0];
 	PORTC = u.bytes[1];
 	u.bytes[2] = (u.bytes[2] & 0x03) | (uint8_t)((u.bytes[2] & 0x1C) << 2) | (PORTD & 0x8C);
@@ -496,7 +496,7 @@ void ParallelBus_WriteCycle(uint32_t address, uint32_t data)
 	}
 
 	// Set data. Bypass the SPI/GPIO drivers again...
-    u.word = data;
+	u.word = data;
 	PORTE = u.bytes[1];
 	PORTF = u.bytes[0];
 	AssertControl(MCP_CS_PIN);
@@ -526,15 +526,15 @@ uint32_t ParallelBus_ReadCycle(uint32_t address)
 {
 	// Using this union surprisingly speeds things up when assembling or
 	// interpreting a uint32_t on the AVR.
-    union {
-        uint32_t word;
-        uint8_t bytes[4];
-    } u;
+	union {
+		uint32_t word;
+		uint8_t bytes[4];
+	} u;
 
-    // We should currently be in a state of "CS is asserted, OE/WE not asserted".
-    // As an optimization, operate under that assumption.
+	// We should currently be in a state of "CS is asserted, OE/WE not asserted".
+	// As an optimization, operate under that assumption.
 
-    // If the data pins are set as outputs, change them to inputs
+	// If the data pins are set as outputs, change them to inputs
 	if (dataIsOutput)
 	{
 		// Set data as inputs. Bypass the SPI/GPIO drivers for this for efficiency.
@@ -563,7 +563,7 @@ uint32_t ParallelBus_ReadCycle(uint32_t address)
 
 	// Set address. This is basically the exact same code as ParallelBus_SetAddress,
 	// but repeated in here so we don't have any function call overhead.
-    u.word = address;
+	u.word = address;
 	PORTA = u.bytes[0];
 	PORTC = u.bytes[1];
 	u.bytes[2] = (u.bytes[2] & 0x03) | (uint8_t)((u.bytes[2] & 0x1C) << 2) | (PORTD & 0x8C);
@@ -603,17 +603,17 @@ uint32_t ParallelBus_ReadCycle(uint32_t address)
  */
 void ParallelBus_Read(uint32_t startAddress, uint32_t *buf, uint16_t len)
 {
-    // We should currently be in a state of "CS is asserted, OE/WE not asserted".
-    // As an optimization, operate under that assumption.
+	// We should currently be in a state of "CS is asserted, OE/WE not asserted".
+	// As an optimization, operate under that assumption.
 
 	// Using this union surprisingly speeds things up when assembling or
 	// interpreting a uint32_t on the AVR.
-    union {
-        uint32_t word;
-        uint8_t bytes[4];
-    } u;
+	union {
+		uint32_t word;
+		uint8_t bytes[4];
+	} u;
 
-    // If the data pins are set as outputs, change them to inputs
+	// If the data pins are set as outputs, change them to inputs
 	if (dataIsOutput)
 	{
 		// Set data as inputs. Bypass the SPI/GPIO drivers for this for efficiency.
@@ -643,7 +643,7 @@ void ParallelBus_Read(uint32_t startAddress, uint32_t *buf, uint16_t len)
 	{
 		// Set address. This is basically the exact same code as ParallelBus_SetAddress,
 		// but repeated in here so we don't have any function call overhead.
-	    u.word = startAddress++;
+		u.word = startAddress++;
 		PORTA = u.bytes[0];
 		PORTC = u.bytes[1];
 		u.bytes[2] = (u.bytes[2] & 0x03) | (uint8_t)((u.bytes[2] & 0x1C) << 2) | (PORTD & 0x8C);
