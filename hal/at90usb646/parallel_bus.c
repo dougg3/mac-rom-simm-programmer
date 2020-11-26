@@ -679,7 +679,14 @@ void ParallelBus_Read(uint32_t startAddress, uint32_t *buf, uint16_t len)
 static ALWAYS_INLINE uint8_t SPITransfer(uint8_t byte)
 {
 	SPDR = byte;
-	while (!(SPSR & (1 << SPIF)));
+	// Crazy optimization. Instead of waiting for the status register
+	// (see the commented-out "while" statement below), wait for 17 clock
+	// cycles instead. We know that our SPI bit rate is half the CPU clock.
+	// After 17 clock cycles, the entire byte has been written out.
+	__asm__ __volatile__ ("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n");
+	__asm__ __volatile__ ("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n");
+	__asm__ __volatile__ ("nop\n");
+	//while (!(SPSR & (1 << SPIF)));
 	return SPDR;
 }
 
@@ -691,7 +698,14 @@ static ALWAYS_INLINE uint8_t SPITransfer(uint8_t byte)
 static ALWAYS_INLINE void SPITransferNoRead(uint8_t byte)
 {
 	SPDR = byte;
-	while (!(SPSR & (1 << SPIF)));
+	// Crazy optimization. Instead of waiting for the status register
+	// (see the commented-out "while" statement below), wait for 17 clock
+	// cycles instead. We know that our SPI bit rate is half the CPU clock.
+	// After 17 clock cycles, the entire byte has been written out.
+	__asm__ __volatile__ ("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n");
+	__asm__ __volatile__ ("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n");
+	__asm__ __volatile__ ("nop\n");
+	//while (!(SPSR & (1 << SPIF)));
 }
 
 /** Asserts a control pin
