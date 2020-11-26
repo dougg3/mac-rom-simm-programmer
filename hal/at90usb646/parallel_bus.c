@@ -74,6 +74,8 @@ static const GPIOPin flashWEPin = {GPIOB, FLASH_WE_PIN};
 static const GPIOPin flashOEPin = {GPIOB, FLASH_OE_PIN};
 /// The /CS pin for the flash chip
 static const GPIOPin flashCSPin = {GPIOB, FLASH_CS_PIN};
+/// Whether or not data pins are outputs
+static bool dataIsOutput;
 
 /** Initializes the 32-bit data/21-bit address parallel bus.
  *
@@ -100,6 +102,7 @@ void ParallelBus_Init(void)
 	// Set all data lines to pulled-up inputs
 	ParallelBus_SetDataDir(0);
 	ParallelBus_SetDataPullups(0xFFFFFFFF);
+	dataIsOutput = false;
 	// Note: During normal operation of read/write cycles, the pullups in the
 	// MCP23S17 will remember they are enabled, so we can do an optimization
 	// when using ParallelBus_ReadCycle/WriteCycle and assume they are already
@@ -225,6 +228,10 @@ void ParallelBus_SetAddressDir(uint32_t outputs)
 /** Sets which pins on the 32-bit data bus should be outputs
  *
  * @param outputs Mask of pins that should be outputs. 1 = output, 0 = input
+ *
+ * Typically all pins would be set as inputs or outputs, and it's automatically
+ * handled by the read/write cycle functions. This function exists mainly for
+ * test purposes.
  */
 void ParallelBus_SetDataDir(uint32_t outputs)
 {
@@ -241,6 +248,17 @@ void ParallelBus_SetDataDir(uint32_t outputs)
 
 	// D0-D15 are part of the MCP23S17
 	MCP23S17_SetDDR(&mcp23s17, u.dataShorts[1]);
+
+	// If none of the pins are outputs, ensure dataIsOutput is false
+	if (outputs == 0)
+	{
+		dataIsOutput = false;
+	}
+	// If all of the pins are outputs, ensure dataIsOutput is true
+	else if (outputs == 0xFFFFFFFFUL)
+	{
+		dataIsOutput = true;
+	}
 }
 
 /** Sets the direction of the CS pin
@@ -435,7 +453,7 @@ bool ParallelBus_ReadWE(void)
 
 /** Performs a write cycle on the parallel bus.
  *
- * @param address The address to read from
+ * @param address The address to write to
  * @param data The 32-bit data to write to the bus
  *
  * Because this function is used a lot during programming, it is super
@@ -462,15 +480,20 @@ void ParallelBus_WriteCycle(uint32_t address, uint32_t data)
 	u.bytes[2] = (u.bytes[2] & 0x03) | ((u.bytes[2] & 0x1C) << 2) | (PORTD & 0x8C);
 	PORTD = u.bytes[2];
 
-	// Set data as outputs. Bypass the SPI/GPIO drivers for this for efficiency.
-	DDRE = 0xFF;
-	DDRF = 0xFF;
-	AssertControl(MCP_CS_PIN);
-	SPITransferNoRead(MCP23S17_CONTROL_WRITE(0));
-	SPITransferNoRead(MCP23S17_IODIRA);
-	SPITransferNoRead(0);
-	SPITransferNoRead(0);
-	DeassertControl(MCP_CS_PIN);
+	// If the data port is not already set as outputs, set it to be outputs now
+	if (!dataIsOutput)
+	{
+		// Set data as outputs. Bypass the SPI/GPIO drivers for this for efficiency.
+		DDRE = 0xFF;
+		DDRF = 0xFF;
+		AssertControl(MCP_CS_PIN);
+		SPITransferNoRead(MCP23S17_CONTROL_WRITE(0));
+		SPITransferNoRead(MCP23S17_IODIRA);
+		SPITransferNoRead(0);
+		SPITransferNoRead(0);
+		DeassertControl(MCP_CS_PIN);
+		dataIsOutput = true;
+	}
 
 	// Set data. Bypass the SPI/GPIO drivers again...
     u.word = data;
@@ -511,22 +534,28 @@ uint32_t ParallelBus_ReadCycle(uint32_t address)
     // We should currently be in a state of "CS is asserted, OE/WE not asserted".
     // As an optimization, operate under that assumption.
 
-	// Set data as inputs. Bypass the SPI/GPIO drivers for this for efficiency.
-	DDRE = 0;
-	DDRF = 0;
-	AssertControl(MCP_CS_PIN);
-	SPITransferNoRead(MCP23S17_CONTROL_WRITE(0));
-	SPITransferNoRead(MCP23S17_IODIRA);
-	SPITransferNoRead(0xFF);
-	SPITransferNoRead(0xFF);
-	DeassertControl(MCP_CS_PIN);
+    // If the data pins are set as outputs, change them to inputs
+	if (dataIsOutput)
+	{
+		// Set data as inputs. Bypass the SPI/GPIO drivers for this for efficiency.
+		DDRE = 0;
+		DDRF = 0;
+		AssertControl(MCP_CS_PIN);
+		SPITransferNoRead(MCP23S17_CONTROL_WRITE(0));
+		SPITransferNoRead(MCP23S17_IODIRA);
+		SPITransferNoRead(0xFF);
+		SPITransferNoRead(0xFF);
+		DeassertControl(MCP_CS_PIN);
 
-	// Set pull-ups on the AVR data pins so we get a default value if a chip
-	// isn't responding. We can assume the MCP23S17 has already been configured
-	// to have its inputs pulled up. On the AVR we can't assume because its
-	// pull-up state is shared by the same register used for data output.
-	PORTE = 0xFF;
-	PORTF = 0xFF;
+		// Set pull-ups on the AVR data pins so we get a default value if a chip
+		// isn't responding. We can assume the MCP23S17 has already been configured
+		// to have its inputs pulled up. On the AVR we can't assume because its
+		// pull-up state is shared by the same register used for data output.
+		PORTE = 0xFF;
+		PORTF = 0xFF;
+
+		dataIsOutput = false;
+	}
 
 	// Assert OE so we start reading from the chip. Safe to do now that
 	// the data pins have been set as inputs.
@@ -584,22 +613,28 @@ void ParallelBus_Read(uint32_t startAddress, uint32_t *buf, uint16_t len)
         uint8_t bytes[4];
     } u;
 
-	// Set data as inputs. Bypass the SPI/GPIO drivers for this for efficiency.
-	DDRE = 0;
-	DDRF = 0;
-	AssertControl(MCP_CS_PIN);
-	SPITransferNoRead(MCP23S17_CONTROL_WRITE(0));
-	SPITransferNoRead(MCP23S17_IODIRA);
-	SPITransferNoRead(0xFF);
-	SPITransferNoRead(0xFF);
-	DeassertControl(MCP_CS_PIN);
+    // If the data pins are set as outputs, change them to inputs
+	if (dataIsOutput)
+	{
+		// Set data as inputs. Bypass the SPI/GPIO drivers for this for efficiency.
+		DDRE = 0;
+		DDRF = 0;
+		AssertControl(MCP_CS_PIN);
+		SPITransferNoRead(MCP23S17_CONTROL_WRITE(0));
+		SPITransferNoRead(MCP23S17_IODIRA);
+		SPITransferNoRead(0xFF);
+		SPITransferNoRead(0xFF);
+		DeassertControl(MCP_CS_PIN);
 
-	// Set pull-ups on the AVR data pins so we get a default value if a chip
-	// isn't responding. We can assume the MCP23S17 has already been configured
-	// to have its inputs pulled up. On the AVR we can't assume because its
-	// pull-up state is shared by the same register used for data output.
-	PORTE = 0xFF;
-	PORTF = 0xFF;
+		// Set pull-ups on the AVR data pins so we get a default value if a chip
+		// isn't responding. We can assume the MCP23S17 has already been configured
+		// to have its inputs pulled up. On the AVR we can't assume because its
+		// pull-up state is shared by the same register used for data output.
+		PORTE = 0xFF;
+		PORTF = 0xFF;
+
+		dataIsOutput = false;
+	}
 
 	// Assert OE, now the chip will start spitting out data.
 	AssertControl(FLASH_OE_PIN);
