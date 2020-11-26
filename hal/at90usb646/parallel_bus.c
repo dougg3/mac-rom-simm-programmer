@@ -141,7 +141,7 @@ void ParallelBus_SetAddress(uint32_t address)
 	PORTA = u.addrBytes[0]; // A0-A7
 	PORTC = u.addrBytes[1]; // A8-A15
 	// A16-A20 are special because they are split up...(We use PORTD pins 0, 1, 4, 5, 6)
-	u.addrBytes[2] = (u.addrBytes[2] & 0x03) | ((u.addrBytes[2] & 0x1C) << 2) | (PORTD & 0x8C);
+	u.addrBytes[2] = (u.addrBytes[2] & 0x03) | (uint8_t)((u.addrBytes[2] & 0x1C) << 2) | (PORTD & 0x8C);
     PORTD = u.addrBytes[2];
 }
 
@@ -477,7 +477,7 @@ void ParallelBus_WriteCycle(uint32_t address, uint32_t data)
     u.word = address;
 	PORTA = u.bytes[0];
 	PORTC = u.bytes[1];
-	u.bytes[2] = (u.bytes[2] & 0x03) | ((u.bytes[2] & 0x1C) << 2) | (PORTD & 0x8C);
+	u.bytes[2] = (u.bytes[2] & 0x03) | (uint8_t)((u.bytes[2] & 0x1C) << 2) | (PORTD & 0x8C);
 	PORTD = u.bytes[2];
 
 	// If the data port is not already set as outputs, set it to be outputs now
@@ -566,7 +566,7 @@ uint32_t ParallelBus_ReadCycle(uint32_t address)
     u.word = address;
 	PORTA = u.bytes[0];
 	PORTC = u.bytes[1];
-	u.bytes[2] = (u.bytes[2] & 0x03) | ((u.bytes[2] & 0x1C) << 2) | (PORTD & 0x8C);
+	u.bytes[2] = (u.bytes[2] & 0x03) | (uint8_t)((u.bytes[2] & 0x1C) << 2) | (PORTD & 0x8C);
 	PORTD = u.bytes[2];
 
 	// Start the SPI read. Each clock cycle at 16 MHz is 62.5 nanoseconds. We don't want to
@@ -646,7 +646,7 @@ void ParallelBus_Read(uint32_t startAddress, uint32_t *buf, uint16_t len)
 	    u.word = startAddress++;
 		PORTA = u.bytes[0];
 		PORTC = u.bytes[1];
-		u.bytes[2] = (u.bytes[2] & 0x03) | ((u.bytes[2] & 0x1C) << 2) | (PORTD & 0x8C);
+		u.bytes[2] = (u.bytes[2] & 0x03) | (uint8_t)((u.bytes[2] & 0x1C) << 2) | (PORTD & 0x8C);
 		PORTD = u.bytes[2];
 
 		// Start the SPI read. Each clock cycle at 16 MHz is 62.5 nanoseconds. We don't want to
