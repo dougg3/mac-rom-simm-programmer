@@ -93,7 +93,7 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 	// (We have to ignore them during the second phase of the test)
 	SIMMElectricalTest_ResetGroundShorts();
 
-	// First check for anything shorted to ground. Set all lines as inputs wit
+	// First check for anything shorted to ground. Set all lines as inputs with
 	// a weak pull-up resistor. Then read the values back and check for any
 	// zeros. This would indicate a short to ground.
 	ParallelBus_SetAddressDir(0);
@@ -116,53 +116,47 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 
 	// Read the address pins back first
 	uint32_t readback = ParallelBus_ReadAddress();
-	if (readback != SIMM_ADDRESS_PINS_MASK)
+	// Check each bit for a LOW which would indicate a short to ground
+	for (i = 0; i <= SIMM_HIGHEST_ADDRESS_LINE; i++)
 	{
-		// Check each bit for a LOW which would indicate a short to ground
-		for (i = 0; i <= SIMM_HIGHEST_ADDRESS_LINE; i++)
+		// Did we find a low bit?
+		if (!(readback & 1))
 		{
-			// Did we find a low bit?
-			if (!(readback & 1))
+			// That means this pin is shorted to ground.
+			// So notify the caller that we have a ground short on this pin
+			if (errorHandler)
 			{
-				// That means this pin is shorted to ground.
-				// So notify the caller that we have a ground short on this pin
-				if (errorHandler)
-				{
-					errorHandler(curPin, GROUND_FAIL_INDEX);
-				}
-
-				// Add it to our internal list of ground shorts also.
-				SIMMElectricalTest_AddGroundShort(curPin);
-
-				// And of course increment the error counter.
-				numErrors++;
+				errorHandler(curPin, GROUND_FAIL_INDEX);
 			}
 
-			// No matter what, though, move on to the next bit and pin.
-			readback >>= 1;
-			curPin++;
+			// Add it to our internal list of ground shorts also.
+			SIMMElectricalTest_AddGroundShort(curPin);
+
+			// And of course increment the error counter.
+			numErrors++;
 		}
+
+		// No matter what, though, move on to the next bit and pin.
+		readback >>= 1;
+		curPin++;
 	}
 
 	// Repeat the exact same process for the data pins
 	readback = ParallelBus_ReadData();
-	if (readback != SIMM_DATA_PINS_MASK)
+	for (i = 0; i <= SIMM_HIGHEST_DATA_LINE; i++)
 	{
-		for (i = 0; i <= SIMM_HIGHEST_DATA_LINE; i++)
+		if (!(readback & 1))
 		{
-			if (!(readback & 1))
+			if (errorHandler)
 			{
-				if (errorHandler)
-				{
-					errorHandler(curPin, GROUND_FAIL_INDEX);
-				}
-				SIMMElectricalTest_AddGroundShort(curPin);
-				numErrors++;
+				errorHandler(curPin, GROUND_FAIL_INDEX);
 			}
-
-			readback >>= 1;
-			curPin++;
+			SIMMElectricalTest_AddGroundShort(curPin);
+			numErrors++;
 		}
+
+		readback >>= 1;
+		curPin++;
 	}
 
 	// Check chip select in the same way...

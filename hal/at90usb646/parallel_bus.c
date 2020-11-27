@@ -101,7 +101,7 @@ void ParallelBus_Init(void)
 
 	// Set all data lines to pulled-up inputs
 	ParallelBus_SetDataDir(0);
-	ParallelBus_SetDataPullups(0xFFFFFFFF);
+	ParallelBus_SetDataPullups(0xFFFFFFFFUL);
 	dataIsOutput = false;
 	// Note: During normal operation of read/write cycles, the pullups in the
 	// MCP23S17 will remember they are enabled, so we can do an optimization
