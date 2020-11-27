@@ -157,6 +157,18 @@ void SPI_ReleaseBus(SPIDevice *spi)
 void SPI_Assert(SPIDevice *spi)
 {
 	GPIO_SetOff(spi->csPin);
+
+	// Due to the optimization we do in ParallelBus talking directly to the
+	// SPI hardware without going through this driver, we need to make sure
+	// that the SPIF flag is cleared here. Otherwise we may think we're done
+	// too early, which would cause us to screw up the next SPI transfer.
+	// This happens because the optimized code doesn't look at SPSR, so the
+	// SPIF flag never gets cleared from the previous SPI operation.
+	if (SPSR & (1 << SPIF))
+	{
+		// Reading the data register clears the flag if it's set
+		(void)SPDR;
+	}
 }
 
 /** Deasserts an SPI device's chip select pin
