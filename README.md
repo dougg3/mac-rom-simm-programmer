@@ -2,24 +2,26 @@
 
 This project is a bootloader and firmware for a Macintosh ROM SIMM programmer, along with control software for Mac OS X, Windows, and Linux. The ROM SIMM is compatible with the SE/30, all II-series Macs with a 64-pin SIMM socket (should include the IIx, IIcx, IIci, IIfx, and IIsi), and the Quadra 700.
 
+This particular repository contains the main firmware that runs on the programmer board. The current compiler version used with this project is avr-gcc 4.8.2. Using a different version of gcc may result in worse performance due to some very tight optimization performed on this project to decrease programming time.
+
 # Downloads
 
-Binary downloads (originally [from Google Code](https://code.google.com/p/mac-rom-simm-programmer/downloads/list)) can be found at https://github.com/jpluimers/mac-rom-simm-programmer/tree/downloads/downloads
+Binary downloads (originally [from Google Code](https://code.google.com/p/mac-rom-simm-programmer/downloads/list)) can be found at https://github.com/dougg3/mac-rom-simm-programmer/tree/downloads/downloads
 
 # Repositories
 
 The project is spread over a few repositories. Some of them have a wiki.
 
-| Repository                            | Repository location                                              | Wiki location  |
-| ------------------------------------- | ---------------------------------------------------------------- | -------------- |
-| Programmer                            | https://github.com/dougg3/mac-rom-simm-programmer                | https://github.com/dougg3/mac-rom-simm-programmer/wiki |
-| Programmer Software (Windows + Mac)   | https://github.com/dougg3/mac-rom-simm-programmer.software       | none |
-| Windows Driver (.inf file)            | https://github.com/dougg3/mac-rom-simm-programmer.windriver      | none |
-| QextSerialPort                        | https://github.com/dougg3/doug-qextserialport-linuxnotifications | none |
-| QextSerialPort base                   | https://github.com/qextserialport/qextserialport                 | https://github.com/qextserialport/qextserialport/blob/wiki/Welcome.md |
-| bootloader                            | https://github.com/dougg3/mac-rom-simm-programmer.bootloader
-| CAD for 2 MB and 8 MB SIMM PCB boards | https://github.com/dougg3/mac-rom-simm-programmer.cad            | none |                    
-| Mac ROM patcher                       | https://github.com/jpluimers/macrompatcher/ (from https://code.google.com/p/macrompatcher) | none |
+| Repository                                | Repository location                                              | Wiki location  |
+| ------------------------------------------------------ | ---------------------------------------------------------------- | -------------- |
+| Programmer Firmware (AVR microcontroller)              | https://github.com/dougg3/mac-rom-simm-programmer                | https://github.com/dougg3/mac-rom-simm-programmer/wiki |
+| Bootloader (AVR microcontroller)                       | https://github.com/dougg3/mac-rom-simm-programmer.bootloader
+| Programmer Software (Windows/Mac/Linux)                | https://github.com/dougg3/mac-rom-simm-programmer.software       | none |
+| Windows Driver (.inf file, not needed on Windows 10)   | https://github.com/dougg3/mac-rom-simm-programmer.windriver      | none |
+| Custom QextSerialPort for Programmer Software          | https://github.com/dougg3/doug-qextserialport-linuxnotifications | none |
+| QextSerialPort base                                    | https://github.com/qextserialport/qextserialport                 | https://github.com/qextserialport/qextserialport/blob/wiki/Welcome.md |
+| CAD for programmer, along with 2 MB and 8 MB SIMM PCBs | https://github.com/dougg3/mac-rom-simm-programmer.cad            | none |                    
+| Mac ROM patcher                                        | https://github.com/jpluimers/macrompatcher/ (from https://code.google.com/p/macrompatcher) | none |
 
 # Videos
 
@@ -68,8 +70,4 @@ Mac IIci ROM hack (custom startup icons): https://www.youtube.com/watch?v=LALaYy
 
 # Non-related articles
 
-- [Software that Doug has written for Mac OS X](http://software.doogul.com/)
-  - [Safari Icon Manager](http://software.doogul.com/sim/)
-  - [Yahoo Tunes](http://software.doogul.com/yahootunes/)
-  - [WakeOnMac](http://software.doogul.com/wom/)
 - [Microcontroller lessons](http://www.downtowndougbrown.com/microcontroller-lessons/)
