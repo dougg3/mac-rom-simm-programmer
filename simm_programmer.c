@@ -229,22 +229,8 @@ static void SIMMProgrammer_HandleWaitingForCommandByte(uint8_t byte)
 		USBCDC_SendByte(CommandReplyOK);
 		// Force this to be sent immediately so the programmer software knows.
 		USBCDC_Flush();
-
-		// Insert a small delay to ensure that it arrives before rebooting.
-		DelayMS(1000);
-
-		// Done with the USB interface -- the bootloader will re-initialize it.
-		USBCDC_Disable();
-
-		// Disable interrupts so nothing weird happens...
-		cli();
-
-		// Wait a little bit to let everything settle and let the program
-		// close the port after the USB disconnect
-		DelayMS(2000);
-
-		// And, of course, go into the bootloader.
-		__asm__ __volatile__ ( "jmp 0xE000" );
+		// Jump into the bootloader
+		Hardware_EnterBootloader();
 		break;
 	// Enter the programmer. We're already there, so reply OK.
 	case EnterProgrammer:

@@ -1,0 +1,23 @@
+# Create a list of all source files specific to the AVR
+set(HWSOURCES
+	hal/at90usb646/LUFA/Drivers/USB/Class/Device/CDCClassDevice.c
+	hal/at90usb646/LUFA/Drivers/USB/Core/AVR8/Device_AVR8.c
+	hal/at90usb646/LUFA/Drivers/USB/Core/AVR8/Endpoint_AVR8.c
+	hal/at90usb646/LUFA/Drivers/USB/Core/AVR8/EndpointStream_AVR8.c
+	hal/at90usb646/LUFA/Drivers/USB/Core/AVR8/Host_AVR8.c
+	hal/at90usb646/LUFA/Drivers/USB/Core/AVR8/Pipe_AVR8.c
+	hal/at90usb646/LUFA/Drivers/USB/Core/AVR8/PipeStream_AVR8.c
+	hal/at90usb646/LUFA/Drivers/USB/Core/AVR8/USBController_AVR8.c
+	hal/at90usb646/LUFA/Drivers/USB/Core/AVR8/USBInterrupt_AVR8.c
+	hal/at90usb646/LUFA/Drivers/USB/Core/ConfigDescriptor.c
+	hal/at90usb646/LUFA/Drivers/USB/Core/DeviceStandardReq.c
+	hal/at90usb646/LUFA/Drivers/USB/Core/Events.c
+	hal/at90usb646/LUFA/Drivers/USB/Core/USBTask.c
+	hal/at90usb646/board.c
+	hal/at90usb646/cdc_device_definition.c
+	hal/at90usb646/Descriptors.c
+	hal/at90usb646/gpio.c
+	hal/at90usb646/parallel_bus.c
+	hal/at90usb646/spi.c
+	hal/at90usb646/usbcdc.c
+)

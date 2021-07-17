@@ -28,6 +28,8 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
+#include "../../util.h"
+#include "../usbcdc.h"
 
 /** Disables interrupts
  *
@@ -61,6 +63,28 @@ static inline void DelayMS(uint16_t ms)
 static inline void DelayUS(uint16_t us)
 {
 	_delay_us(us);
+}
+
+/** Jumps to the bootloader
+ *
+ */
+static inline void Hardware_EnterBootloader(void)
+{
+	// Insert a small delay to ensure that it arrives before rebooting.
+	DelayMS(1000);
+
+	// Done with the USB interface -- the bootloader will re-initialize it.
+	USBCDC_Disable();
+
+	// Disable interrupts so nothing weird happens...
+	DisableInterrupts();
+
+	// Wait a little bit to let everything settle and let the program
+	// close the port after the USB disconnect
+	DelayMS(2000);
+
+	// And, of course, go into the bootloader.
+	__asm__ __volatile__ ( "jmp 0xE000" );
 }
 
 #endif /* HAL_AT90USB646_HARDWARE_H_ */
