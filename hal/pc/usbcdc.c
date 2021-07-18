@@ -23,13 +23,50 @@
  */
 
 #include "../usbcdc.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <termios.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+
+/// The emulated USB CDC serial port associated with the faked USB device
+static const char *gadgetPort = "/dev/ttyGS0";
+/// File descriptor for the port
+static int gadgetfd;
 
 /** Initializes the USB CDC device
  *
  */
 void USBCDC_Init(void)
 {
-	// TODO: How do we pretend to be a USB device?
+	// Attempt to open the device end of the USB CDC gadget.
+	gadgetfd = open(gadgetPort, O_RDWR | O_CLOEXEC | O_NOCTTY);
+	if (gadgetfd < 0)
+	{
+		// If an error occurs, print a message and bail
+		fprintf(stderr, "Unable to open USB gadget port (%s).\n", gadgetPort);
+		exit(1);
+	}
+
+	// Set up for raw I/O without weird extra characters
+	struct termios options;
+	if (tcgetattr(gadgetfd, &options) < 0)
+	{
+		fprintf(stderr, "Unable to get options on USB gadget port\n");
+		exit(1);
+	}
+	cfmakeraw(&options);
+	if (tcsetattr(gadgetfd, TCSANOW, &options) < 0)
+	{
+		fprintf(stderr, "Unable to set options on USB gadget port\n");
+		exit(1);
+	}
+
+	// TODO: Actually allow the faked device to enumerate now, should probably
+	// check earlier in the process to see if the file is even there
 }
 
 /** Disables the USB CDC device
@@ -37,7 +74,7 @@ void USBCDC_Init(void)
  */
 void USBCDC_Disable(void)
 {
-	// TODO: How do we stop pretending to be a USB device?
+	// TODO: "unplug" the simulated device
 }
 
 /** Main loop handler for the USB CDC device. Call from the main loop.
@@ -54,7 +91,11 @@ void USBCDC_Check(void)
  */
 void USBCDC_SendByte(uint8_t byte)
 {
-	(void)byte; // TODO: How do we send a byte as a pretend USB device?
+	// TODO: write can be interrupted, look at SA_RESTART?
+	if (write(gadgetfd, &byte, sizeof(byte)) != sizeof(byte))
+	{
+		fprintf(stderr, "Warning: Byte TX failed\n");
+	}
 }
 
 /** Sends a block of data over the USB CDC serial port
@@ -65,8 +106,8 @@ void USBCDC_SendByte(uint8_t byte)
  */
 bool USBCDC_SendData(uint8_t const *data, uint16_t len)
 {
-	(void)data; (void)len; // TODO: How do we send data as a pretend USB device?
-	return false;
+	// TODO: write can be interrupted, look at SA_RESTART?
+	return (write(gadgetfd, data, len) == len);
 }
 
 /** Attempts to read a byte from the USB CDC serial port
@@ -75,7 +116,16 @@ bool USBCDC_SendData(uint8_t const *data, uint16_t len)
  */
 int16_t USBCDC_ReadByte(void)
 {
-	// TODO: How do we read data as a pretend USB device?
+	int bytes;
+	if (ioctl(gadgetfd, FIONREAD, &bytes) == 0 && bytes > 0)
+	{
+		uint8_t b;
+		// TODO: read can be interrupted, look at SA_RESTART?
+		if (read(gadgetfd, &b, sizeof(b)) == sizeof(b))
+		{
+			return b;
+		}
+	}
 	return -1;
 }
 
@@ -85,8 +135,13 @@ int16_t USBCDC_ReadByte(void)
  */
 uint8_t USBCDC_ReadByteBlocking(void)
 {
-	// TODO: How do we read data (blocking) as a pretend USB device?
-	return 0;
+	uint8_t b = 0;
+	// TODO: read can be interrupted, look at SA_RESTART?
+	if (read(gadgetfd, &b, sizeof(b)) != sizeof(b))
+	{
+		fprintf(stderr, "Warning: Byte RX failed\n");
+	}
+	return b;
 }
 
 /** Forces any transmitted data to be sent over USB immediately
@@ -94,5 +149,5 @@ uint8_t USBCDC_ReadByteBlocking(void)
  */
 void USBCDC_Flush(void)
 {
-	// TODO: How do we flush data sent to a pretend USB device?
+	tcflush(gadgetfd, TCOFLUSH);
 }
