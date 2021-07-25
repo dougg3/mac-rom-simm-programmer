@@ -88,8 +88,8 @@ start_gadget() {
 	# Create the gadget and configure it
 	mkdir "$CONFIGFS_DIR/usb_gadget/$NEWGADGET"
 	cd "$CONFIGFS_DIR/usb_gadget/$NEWGADGET"
-	echo 0x16d0 > idVendor
-	echo 0x06aa > idProduct
+	echo $SIMMPROGRAMMER_VID > idVendor
+	echo $SIMMPROGRAMMER_PID > idProduct
 	mkdir strings/0x0409
 	echo "Doug Brown" > strings/0x0409/manufacturer
 	echo "Mac ROM SIMM Programmer" > strings/0x0409/product
