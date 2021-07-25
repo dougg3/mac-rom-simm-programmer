@@ -1,7 +1,7 @@
 /*
- * usbcdc_hw.h
+ * usbsimulationmanager.h
  *
- *  Created on: Jul 17, 2021
+ *  Created on: Jul 25, 2021
  *      Author: Doug
  *
  * Copyright (C) 2011-2021 Doug Brown
@@ -22,18 +22,19 @@
  *
  */
 
-#ifndef HAL_PC_USBCDC_HW_H_
-#define HAL_PC_USBCDC_HW_H_
+#ifndef USBSIMULATIONMANAGER_H
+#define USBSIMULATIONMANAGER_H
 
-#include "../../util.h"
-#include <stdint.h>
-#include <stdbool.h>
+#include <QString>
 
-void USBCDC_SendByte(uint8_t byte);
-bool USBCDC_SendData(uint8_t const *data, uint16_t len);
-int16_t USBCDC_ReadByte(void);
-uint8_t USBCDC_ReadByteBlocking(void);
-void USBCDC_Flush(void);
-void USBCDC_SetPortName(const char *portName);
+class USBSimulationManager
+{
+public:
+	static QString configFSPath();
+	static QString localGadgetDir();
+	static QString localGadgetPortDevice();
+	static bool connectGadget();
+	static bool disconnectGadget();
+};
 
-#endif /* HAL_AT90USB646_USBCDC_HW_H_ */
+#endif // USBSIMULATIONMANAGER_H

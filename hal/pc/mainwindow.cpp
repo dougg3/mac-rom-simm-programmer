@@ -1,7 +1,7 @@
 /*
- * usbcdc_hw.h
+ * mainwindow.cpp
  *
- *  Created on: Jul 17, 2021
+ *  Created on: Jul 25, 2021
  *      Author: Doug
  *
  * Copyright (C) 2011-2021 Doug Brown
@@ -22,18 +22,45 @@
  *
  */
 
-#ifndef HAL_PC_USBCDC_HW_H_
-#define HAL_PC_USBCDC_HW_H_
+#include "mainwindow.h"
+#include "ui_mainwindow.h"
+#include "usbsimulationmanager.h"
 
-#include "../../util.h"
-#include <stdint.h>
-#include <stdbool.h>
+MainWindow::MainWindow(QWidget *parent) :
+	QMainWindow(parent),
+	ui(new Ui::MainWindow)
+{
+	ui->setupUi(this);
+}
 
-void USBCDC_SendByte(uint8_t byte);
-bool USBCDC_SendData(uint8_t const *data, uint16_t len);
-int16_t USBCDC_ReadByte(void);
-uint8_t USBCDC_ReadByteBlocking(void);
-void USBCDC_Flush(void);
-void USBCDC_SetPortName(const char *portName);
+MainWindow::~MainWindow()
+{
+	delete ui;
+}
 
-#endif /* HAL_AT90USB646_USBCDC_HW_H_ */
+void MainWindow::on_connectButton_clicked()
+{
+	if (ui->connectButton->text() == "Connect")
+	{
+		if (USBSimulationManager::connectGadget())
+		{
+			ui->connectButton->setText("Disconnect");
+		}
+		else
+		{
+			// TODO: error
+		}
+	}
+	else
+	{
+		if (USBSimulationManager::disconnectGadget())
+		{
+			// TODO: reset simulator state so when we reconnect it's all fresh
+			ui->connectButton->setText("Connect");
+		}
+		else
+		{
+			// TODO: error
+		}
+	}
+}

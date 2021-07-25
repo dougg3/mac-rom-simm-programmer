@@ -31,9 +31,11 @@
 #include <termios.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <linux/limits.h>
+#include <string.h>
 
 /// The emulated USB CDC serial port associated with the faked USB device
-static const char *gadgetPort = "/dev/ttyGS0";
+static char gadgetPort[PATH_MAX];
 /// File descriptor for the port
 static int gadgetfd;
 
@@ -42,6 +44,13 @@ static int gadgetfd;
  */
 void USBCDC_Init(void)
 {
+	// Bail if we haven't initialized the gadgetPort variable yet.
+	// It's the responsibility of the simulation to set that up ahead of time.
+	if (gadgetPort[0] == 0)
+	{
+		return;
+	}
+
 	// Attempt to open the device end of the USB CDC gadget.
 	gadgetfd = open(gadgetPort, O_RDWR | O_CLOEXEC | O_NOCTTY);
 	if (gadgetfd < 0)
@@ -150,4 +159,14 @@ uint8_t USBCDC_ReadByteBlocking(void)
 void USBCDC_Flush(void)
 {
 	tcflush(gadgetfd, TCOFLUSH);
+}
+
+/**
+ * @brief Sets the port name to use for the simulated CDC serial port
+ * @param portName The port name (typically /dev/ttyGS0)
+ */
+void USBCDC_SetPortName(const char *portName)
+{
+	strncpy(gadgetPort, portName, sizeof(gadgetPort));
+	gadgetPort[sizeof(gadgetPort) - 1] = 0;
 }

@@ -1,7 +1,7 @@
 /*
- * usbcdc_hw.h
+ * mainwindow.h
  *
- *  Created on: Jul 17, 2021
+ *  Created on: Jul 25, 2021
  *      Author: Doug
  *
  * Copyright (C) 2011-2021 Doug Brown
@@ -22,18 +22,28 @@
  *
  */
 
-#ifndef HAL_PC_USBCDC_HW_H_
-#define HAL_PC_USBCDC_HW_H_
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
 
-#include "../../util.h"
-#include <stdint.h>
-#include <stdbool.h>
+#include <QMainWindow>
 
-void USBCDC_SendByte(uint8_t byte);
-bool USBCDC_SendData(uint8_t const *data, uint16_t len);
-int16_t USBCDC_ReadByte(void);
-uint8_t USBCDC_ReadByteBlocking(void);
-void USBCDC_Flush(void);
-void USBCDC_SetPortName(const char *portName);
+namespace Ui {
+class MainWindow;
+}
 
-#endif /* HAL_AT90USB646_USBCDC_HW_H_ */
+class MainWindow : public QMainWindow
+{
+	Q_OBJECT
+
+public:
+	explicit MainWindow(QWidget *parent = nullptr);
+	~MainWindow();
+
+private slots:
+	void on_connectButton_clicked();
+
+private:
+	Ui::MainWindow *ui;
+};
+
+#endif // MAINWINDOW_H

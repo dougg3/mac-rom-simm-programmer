@@ -22,8 +22,9 @@ add_executable(SIMMProgrammer.elf ${SOURCES} ${HWSOURCES})
 
 # Common compiler options
 target_compile_options(SIMMProgrammer.elf PRIVATE
-	-Wall -Os -std=gnu99 -ffunction-sections -fdata-sections
+	-Wall -Os -ffunction-sections -fdata-sections
 )
+set_property(TARGET SIMMProgrammer.elf PROPERTY C_STANDARD 99)
 
 # Common linker options
 target_link_options(SIMMProgrammer.elf PRIVATE

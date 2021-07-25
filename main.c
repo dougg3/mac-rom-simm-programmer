@@ -42,7 +42,11 @@
  *
  * @return Never; the main loop is an infinite loop.
  */
+#if !IS_PC_BUILD
 int main(void)
+#else
+int programmer_thread_main(void)
+#endif
 {
 	DisableInterrupts();
 	Board_Init();
