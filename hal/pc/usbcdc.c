@@ -22,6 +22,9 @@
  *
  */
 
+/// For access to TEMP_FAILURE_RETRY
+#define _GNU_SOURCE
+
 #include "../usbcdc.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,6 +36,7 @@
 #include <sys/ioctl.h>
 #include <linux/limits.h>
 #include <string.h>
+#include <errno.h>
 
 /// The emulated USB CDC serial port associated with the faked USB device
 static char gadgetPort[PATH_MAX];
@@ -52,7 +56,7 @@ void USBCDC_Init(void)
 	}
 
 	// Attempt to open the device end of the USB CDC gadget.
-	gadgetfd = open(gadgetPort, O_RDWR | O_CLOEXEC | O_NOCTTY);
+	gadgetfd = TEMP_FAILURE_RETRY(open(gadgetPort, O_RDWR | O_CLOEXEC | O_NOCTTY));
 	if (gadgetfd < 0)
 	{
 		// If an error occurs, print a message and bail
@@ -62,20 +66,17 @@ void USBCDC_Init(void)
 
 	// Set up for raw I/O without weird extra characters
 	struct termios options;
-	if (tcgetattr(gadgetfd, &options) < 0)
+	if (TEMP_FAILURE_RETRY(tcgetattr(gadgetfd, &options)) < 0)
 	{
 		fprintf(stderr, "Unable to get options on USB gadget port\n");
 		exit(1);
 	}
 	cfmakeraw(&options);
-	if (tcsetattr(gadgetfd, TCSANOW, &options) < 0)
+	if (TEMP_FAILURE_RETRY(tcsetattr(gadgetfd, TCSANOW, &options)) < 0)
 	{
 		fprintf(stderr, "Unable to set options on USB gadget port\n");
 		exit(1);
 	}
-
-	// TODO: Actually allow the faked device to enumerate now, should probably
-	// check earlier in the process to see if the file is even there
 }
 
 /** Disables the USB CDC device
@@ -100,8 +101,7 @@ void USBCDC_Check(void)
  */
 void USBCDC_SendByte(uint8_t byte)
 {
-	// TODO: write can be interrupted, look at SA_RESTART?
-	if (write(gadgetfd, &byte, sizeof(byte)) != sizeof(byte))
+	if (TEMP_FAILURE_RETRY(write(gadgetfd, &byte, sizeof(byte))) != sizeof(byte))
 	{
 		fprintf(stderr, "Warning: Byte TX failed\n");
 	}
@@ -115,8 +115,7 @@ void USBCDC_SendByte(uint8_t byte)
  */
 bool USBCDC_SendData(uint8_t const *data, uint16_t len)
 {
-	// TODO: write can be interrupted, look at SA_RESTART?
-	return (write(gadgetfd, data, len) == len);
+	return (TEMP_FAILURE_RETRY(write(gadgetfd, data, len)) == len);
 }
 
 /** Attempts to read a byte from the USB CDC serial port
@@ -129,8 +128,7 @@ int16_t USBCDC_ReadByte(void)
 	if (ioctl(gadgetfd, FIONREAD, &bytes) == 0 && bytes > 0)
 	{
 		uint8_t b;
-		// TODO: read can be interrupted, look at SA_RESTART?
-		if (read(gadgetfd, &b, sizeof(b)) == sizeof(b))
+		if (TEMP_FAILURE_RETRY(read(gadgetfd, &b, sizeof(b))) == sizeof(b))
 		{
 			return b;
 		}
@@ -145,8 +143,7 @@ int16_t USBCDC_ReadByte(void)
 uint8_t USBCDC_ReadByteBlocking(void)
 {
 	uint8_t b = 0;
-	// TODO: read can be interrupted, look at SA_RESTART?
-	if (read(gadgetfd, &b, sizeof(b)) != sizeof(b))
+	if (TEMP_FAILURE_RETRY(read(gadgetfd, &b, sizeof(b))) != sizeof(b))
 	{
 		fprintf(stderr, "Warning: Byte RX failed\n");
 	}
