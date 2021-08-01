@@ -23,6 +23,7 @@
  */
 
 #include "board_hw.h"
+#include "flash_4mbit.h"
 
 /** Initializes any board hardware-specific stuff
  *
@@ -30,6 +31,28 @@
 void Board_Init(void)
 {
 	// Nothing to do on PC
+
+	// TODO: Figure out a way to make this dynamically configurable. But for now...
+	GPIOPin cs = {GPIOMISC, 4};
+	GPIOPin oe = {GPIOMISC, 5};
+	GPIOPin we = {GPIOMISC, 6};
+	static Flash4MBit ics[4];
+	for (uint8_t i = 0; i < 4; i++)
+	{
+		Flash4MBit_Init(&ics[i], Flash_SST39SF040);
+		GPIOSim_AddDevice(&ics[i].base);
+		Flash4MBit_SetControlPins(&ics[i], cs, oe, we);
+		for (uint8_t j = 0; j < FLASH_4MBIT_DATA_PINS; j++)
+		{
+			GPIOPin dataPin = {GPIODATA, i * 8 + j};
+			Flash4MBit_SetDataPin(&ics[i], j, dataPin);
+		}
+		for (uint8_t j = 0; j < FLASH_4MBIT_ADDR_PINS; j++)
+		{
+			GPIOPin addrPin = {GPIOADDR, j};
+			Flash4MBit_SetAddressPin(&ics[i], j, addrPin);
+		}
+	}
 }
 
 /** Determines if a brownout was detected at startup

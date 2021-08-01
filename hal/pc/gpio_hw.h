@@ -29,13 +29,15 @@
 /// Used with the GPIOPin struct.
 enum {
 	/// The PC simulated hardware is laid out in a special way so that pins that
-	/// belong together are grouped onto virtual "ports". All of the address pins
+	/// belong together are grouped onto virtual 32-bit "ports". All of the address pins
 	/// comprise one port, all of the data pins comprise another port, and other
 	/// miscellaneous pins like LEDs and parallel bus control pins comprise one
 	/// additional port.
 	GPIOMISC,
 	GPIOADDR,
 	GPIODATA,
+	/// We also have a define to know how many actual ports we have
+	NUM_SIM_GPIO_PORTS
 };
 
 #endif /* HAL_PC_GPIO_HW_H_ */

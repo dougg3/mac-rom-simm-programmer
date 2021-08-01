@@ -23,6 +23,12 @@
  */
 
 #include "../gpio.h"
+#include "gpio_hw.h"
+#include "gpio_sim.h"
+
+static uint32_t directionReg[NUM_SIM_GPIO_PORTS];
+static uint32_t pullupReg[NUM_SIM_GPIO_PORTS];
+static uint32_t outputReg[NUM_SIM_GPIO_PORTS];
 
 /** Sets the direction of a GPIO pin.
  *
@@ -31,8 +37,26 @@
  */
 void GPIO_SetDirection(GPIOPin pin, bool output)
 {
-	// TODO: Modify direction
-	(void)pin; (void)output;
+	if (pin.port < NUM_SIM_GPIO_PORTS)
+	{
+		// Figure out if any state is actually changing, and if so, modify it
+		bool alreadyOutput = directionReg[pin.port] & (1UL << pin.pin);
+		if (output != alreadyOutput)
+		{
+			if (output)
+			{
+				directionReg[pin.port] |= (1UL << pin.pin);
+				// We just became an output, so make sure any sim devices are updated with
+				// the new driven value
+				GPIOSim_WritePin(pin, outputReg[pin.port] & (1UL << pin.pin));
+			}
+			else
+			{
+				directionReg[pin.port] &= ~(1UL << pin.pin);
+				// We just became an input, there's no state to update really
+			}
+		}
+	}
 }
 
 /** Sets whether an input GPIO pin is pulled up
@@ -42,8 +66,19 @@ void GPIO_SetDirection(GPIOPin pin, bool output)
  */
 void GPIO_SetPullup(GPIOPin pin, bool pullup)
 {
-	// TODO: Modify pullup
-	(void)pin; (void)pullup;
+	if (pin.port < NUM_SIM_GPIO_PORTS)
+	{
+		// Update the pullup register. No need to update any other state,
+		// it simply affects the readback simulation
+		if (pullup)
+		{
+			pullupReg[pin.port] |= (1UL << pin.pin);
+		}
+		else
+		{
+			pullupReg[pin.port] &= ~(1UL << pin.pin);
+		}
+	}
 }
 
 /** Turns a GPIO pin on (sets it high)
@@ -52,8 +87,19 @@ void GPIO_SetPullup(GPIOPin pin, bool pullup)
  */
 void GPIO_SetOn(GPIOPin pin)
 {
-	// TODO: Turn on
-	(void)pin;
+	if (pin.port < NUM_SIM_GPIO_PORTS)
+	{
+		// Determine if we're actually changing the current state, which would
+		// require us to update simulated devices
+		bool isOutput = directionReg[pin.port] & (1UL << pin.pin);
+		bool curOutputValue = outputReg[pin.port] & (1UL << pin.pin);
+		bool needsNotification = isOutput && !curOutputValue;
+		outputReg[pin.port] |= (1UL << pin.pin);
+		if (needsNotification)
+		{
+			GPIOSim_WritePin(pin, true);
+		}
+	}
 }
 
 /** Turns a GPIO pin off (sets it low)
@@ -62,8 +108,19 @@ void GPIO_SetOn(GPIOPin pin)
  */
 void GPIO_SetOff(GPIOPin pin)
 {
-	// TODO: Turn off
-	(void)pin;
+	if (pin.port < NUM_SIM_GPIO_PORTS)
+	{
+		// Determine if we're actually changing the current state, which would
+		// require us to update simulated devices
+		bool isOutput = directionReg[pin.port] & (1UL << pin.pin);
+		bool curOutputValue = outputReg[pin.port] & (1UL << pin.pin);
+		bool needsNotification = isOutput && curOutputValue;
+		outputReg[pin.port] &= ~(1UL << pin.pin);
+		if (needsNotification)
+		{
+			GPIOSim_WritePin(pin, false);
+		}
+	}
 }
 
 /** Toggles a GPIO pin
@@ -72,8 +129,18 @@ void GPIO_SetOff(GPIOPin pin)
  */
 void GPIO_Toggle(GPIOPin pin)
 {
-	// TODO: Toggle
-	(void)pin;
+	if (pin.port < NUM_SIM_GPIO_PORTS)
+	{
+		// Figure out whether we are turning it on or off, and forward on
+		if (outputReg[pin.port] & (1UL << pin.pin))
+		{
+			GPIO_SetOff(pin);
+		}
+		else
+		{
+			GPIO_SetOn(pin);
+		}
+	}
 }
 
 /** Reads the input status of a GPIO pin
@@ -83,7 +150,51 @@ void GPIO_Toggle(GPIOPin pin)
  */
 bool GPIO_Read(GPIOPin pin)
 {
-	// TODO: Read
-	(void)pin;
-	return false;
+	if (pin.port < NUM_SIM_GPIO_PORTS)
+	{
+		// If we are currently configured as an output, just read back the output value.
+		// We'll pretend that's what our "simulated" hardware does.
+		if (directionReg[pin.port] & (1UL << pin.pin))
+		{
+			return outputReg[pin.port] & (1UL << pin.pin);
+		}
+		else
+		{
+			// If we're configured as an input, read back the value from any simulators
+			GPIOSimValue readback = GPIOSim_ReadPin(pin);
+			switch (readback)
+			{
+			case GPIOSimNotDriving:
+			default:
+				if (pullupReg[pin.port] & (1UL << pin.pin))
+				{
+					// If the pull-up is active and nothing is driving the pin,
+					// read back as high
+					return true;
+				}
+				else
+				{
+					// If the pull-up is not active and nothing is driving the pin,
+					// it's floating. For the purposes of our simulation, let's return low.
+					// We could return random values if we wanted...
+					// TODO: assertion with current GPIO state, stack trace?
+					return false;
+				}
+			case GPIOSimDrivingLow:
+				return false;
+			case GPIOSimDrivingHigh:
+				return true;
+			case GPIOSimDrivingConflict:
+				// If it's being driven both high and low, bad things will happen.
+				// For the purposes of our simulation, read back as high.
+				// TODO: assertion with current GPIO state, stack trace?
+				return true;
+			}
+		}
+	}
+	else
+	{
+		// Read values as low if an invalid port is passed in
+		return false;
+	}
 }

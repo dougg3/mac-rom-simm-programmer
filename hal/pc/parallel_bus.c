@@ -76,8 +76,11 @@ void ParallelBus_Init(void)
  */
 void ParallelBus_SetAddress(uint32_t address)
 {
-	// TODO: Fill out entire address in GPIOADDR
-	(void)address;
+	for (int i = 0; i <= PARALLEL_BUS_HIGHEST_ADDRESS_LINE; i++)
+	{
+		GPIOPin addrPin = {GPIOADDR, i};
+		GPIO_Set(addrPin, address & (1UL << i));
+	}
 }
 
 /** Sets the output data on the 32-bit data bus
@@ -86,8 +89,11 @@ void ParallelBus_SetAddress(uint32_t address)
  */
 void ParallelBus_SetData(uint32_t data)
 {
-	// TODO: Fill out entire data in GPIODATA
-	(void)data;
+	for (int i = 0; i < 32; i++)
+	{
+		GPIOPin dataPin = {GPIODATA, i};
+		GPIO_Set(dataPin, data & (1UL << i));
+	}
 }
 
 /** Sets the output value of the CS pin
@@ -126,8 +132,11 @@ void ParallelBus_SetWE(bool high)
  */
 void ParallelBus_SetAddressDir(uint32_t outputs)
 {
-	// TODO: Set direction of GPIOADDR
-	(void)outputs;
+	for (int i = 0; i <= PARALLEL_BUS_HIGHEST_ADDRESS_LINE; i++)
+	{
+		GPIOPin addrPin = {GPIOADDR, i};
+		GPIO_SetDirection(addrPin, outputs & (1UL << i));
+	}
 }
 
 /** Sets which pins on the 32-bit data bus should be outputs
@@ -140,8 +149,11 @@ void ParallelBus_SetAddressDir(uint32_t outputs)
  */
 void ParallelBus_SetDataDir(uint32_t outputs)
 {
-	// TODO: Set direction of GPIODATA
-	(void)outputs;
+	for (int i = 0; i < 32; i++)
+	{
+		GPIOPin dataPin = {GPIODATA, i};
+		GPIO_SetDirection(dataPin, outputs & (1UL << i));
+	}
 }
 
 /** Sets the direction of the CS pin
@@ -189,8 +201,11 @@ void ParallelBus_SetWEDir(bool output)
  */
 void ParallelBus_SetAddressPullups(uint32_t pullups)
 {
-	// TODO: Set pullups on GPIOADDR
-	(void)pullups;
+	for (int i = 0; i <= PARALLEL_BUS_HIGHEST_ADDRESS_LINE; i++)
+	{
+		GPIOPin addrPin = {GPIOADDR, i};
+		GPIO_SetPullup(addrPin, pullups & (1UL << i));
+	}
 }
 
 /** Sets which pins on the 32-bit data bus should be pulled up (if inputs)
@@ -203,8 +218,11 @@ void ParallelBus_SetAddressPullups(uint32_t pullups)
  */
 void ParallelBus_SetDataPullups(uint32_t pullups)
 {
-	// TODO: Set pullups on GPIODATA
-	(void)pullups;
+	for (int i = 0; i < 32; i++)
+	{
+		GPIOPin dataPin = {GPIODATA, i};
+		GPIO_SetPullup(dataPin, pullups & (1UL << i));
+	}
 }
 
 /** Sets whether the CS pin is pulled up, if it's an input.
@@ -252,8 +270,16 @@ void ParallelBus_SetWEPullup(bool pullup)
  */
 uint32_t ParallelBus_ReadAddress(void)
 {
-	// TODO: Read GPIOADDR
-	return 0;
+	uint32_t readback = 0;
+	for (int i = 0; i <= PARALLEL_BUS_HIGHEST_ADDRESS_LINE; i++)
+	{
+		GPIOPin addrPin = {GPIOADDR, i};
+		if (GPIO_Read(addrPin))
+		{
+			readback |= (1UL << i);
+		}
+	}
+	return readback;
 }
 
 /** Reads the current data on the 32-bit data bus.
@@ -262,8 +288,16 @@ uint32_t ParallelBus_ReadAddress(void)
  */
 uint32_t ParallelBus_ReadData(void)
 {
-	// TODO: Read GPIODATA
-	return 0;
+	uint32_t readback = 0;
+	for (int i = 0; i < 32; i++)
+	{
+		GPIOPin dataPin = {GPIODATA, i};
+		if (GPIO_Read(dataPin))
+		{
+			readback |= (1UL << i);
+		}
+	}
+	return readback;
 }
 
 /** Reads the status of the CS pin, if it's set as an input.

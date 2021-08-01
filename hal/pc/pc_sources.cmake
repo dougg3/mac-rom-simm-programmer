@@ -1,7 +1,9 @@
 # Create a list of all source files specific to the PC
 set(HWSOURCES
 	hal/pc/board.c
+	hal/pc/flash_4mbit.c
 	hal/pc/gpio.c
+	hal/pc/gpio_sim.c
 	hal/pc/main.cpp
 	hal/pc/mainwindow.cpp
 	hal/pc/mainwindow.ui
