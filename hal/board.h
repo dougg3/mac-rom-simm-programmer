@@ -30,6 +30,7 @@
 
 // Commented-out functions should be static inline in each board-specific header file.
 //GPIOPin Board_LEDPin(void);
+//void Board_EnterBootloader(void);
 #include "board_hw.h"
 
 void Board_Init(void);
