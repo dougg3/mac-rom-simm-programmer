@@ -27,6 +27,8 @@
 
 #include "gpio_hw.h"
 #include "../gpio.h"
+#include "hardware.h"
+#include "../usbcdc.h"
 
 /** Gets the GPIO pin on the board that controls the status LED
  *
@@ -35,6 +37,28 @@
 static inline GPIOPin Board_LEDPin(void)
 {
 	return GPIO_PIN(GPIOD, 7);
+}
+
+/** Jumps to the bootloader
+ *
+ */
+static inline void Board_EnterBootloader(void)
+{
+	// Insert a small delay to ensure that it arrives before rebooting.
+	DelayMS(1000);
+
+	// Done with the USB interface -- the bootloader will re-initialize it.
+	USBCDC_Disable();
+
+	// Disable interrupts so nothing weird happens...
+	DisableInterrupts();
+
+	// Wait a little bit to let everything settle and let the program
+	// close the port after the USB disconnect
+	DelayMS(2000);
+
+	// And, of course, go into the bootloader.
+	__asm__ __volatile__ ( "jmp 0xE000" );
 }
 
 #endif /* HAL_AT90USB646_BOARD_HW_H_ */
