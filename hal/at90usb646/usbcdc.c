@@ -25,13 +25,29 @@
 #include "../usbcdc.h"
 #include "LUFA/Drivers/USB/USB.h"
 #include "cdc_device_definition.h"
+#include "hardware.h"
 
 /** Initializes the USB CDC device
  *
  */
 void USBCDC_Init(void)
 {
-	// Initialize LUFA
+	// Initialize LUFA.
+	// We have to manually start the USB PLL rather than allow LUFA to do it,
+	// because we might be on an AT90USB128x instead of AT90USB64x, and LUFA's
+	// automatic PLL control decides on the PLL init value at compile time.
+	// It differs between the two chips when there's a 16 MHz crystal.
+	if (IsAT90USB128x())
+	{
+		PLLCSR = (1 << PLLP2) | (1 << PLLP0);
+		PLLCSR = ((1 << PLLP2) | (1 << PLLP0) | (1 << PLLE));
+	}
+	else
+	{
+		PLLCSR = (1 << PLLP2) | (1 << PLLP1);
+		PLLCSR = ((1 << PLLP2) | (1 << PLLP1) | (1 << PLLE));
+	}
+	while (!USB_PLL_IsReady());
 	USB_Init();
 }
 
@@ -42,6 +58,7 @@ void USBCDC_Disable(void)
 {
 	// Disable LUFA, this will cause us to no longer identify as a USB device
 	USB_Disable();
+	USB_PLL_Off();
 }
 
 /** Main loop handler for the USB CDC device. Call from the main loop.
