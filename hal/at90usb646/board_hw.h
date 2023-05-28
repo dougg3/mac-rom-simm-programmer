@@ -57,8 +57,16 @@ static inline void Board_EnterBootloader(void)
 	// close the port after the USB disconnect
 	DelayMS(2000);
 
-	// And, of course, go into the bootloader.
-	__asm__ __volatile__ ( "jmp 0xE000" );
+	// Jump to the correct bootloader address based on whether this is an
+	// AT90USB128x or AT90USB64x
+	if (IsAT90USB128x())
+	{
+		__asm__ __volatile__ ( "jmp 0x1E000" );
+	}
+	else
+	{
+		__asm__ __volatile__ ( "jmp 0xE000" );
+	}
 }
 
 #endif /* HAL_AT90USB646_BOARD_HW_H_ */
