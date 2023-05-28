@@ -25,6 +25,7 @@
 #ifndef HAL_AT90USB646_HARDWARE_H_
 #define HAL_AT90USB646_HARDWARE_H_
 
+#include <avr/boot.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
@@ -61,6 +62,17 @@ static inline void DelayMS(uint16_t ms)
 static inline void DelayUS(uint16_t us)
 {
 	_delay_us(us);
+}
+
+/** Determines if this code is running on an AT90USB128x or AT90USB64x
+ *
+ * @return True if it's an AT90USB128x, false if AT90USB64x
+ */
+static inline bool IsAT90USB128x(void)
+{
+	// Read the device signature byte 2 to determine whether this is an
+	// AT90USB128x or AT90USB64x.
+	return boot_signature_byte_get(0x0002) == 0x97;
 }
 
 #endif /* HAL_AT90USB646_HARDWARE_H_ */
