@@ -23,6 +23,19 @@ The project is spread over a few repositories. Some of them have a wiki.
 | CAD for programmer, along with 2 MB and 8 MB SIMM PCBs | https://github.com/dougg3/mac-rom-simm-programmer.cad            | none |                    
 | Mac ROM patcher                                        | https://github.com/jpluimers/macrompatcher/ (from https://code.google.com/p/macrompatcher) | none |
 
+# Firmware compilation instructions
+
+As mentioned earlier, this is an AVR project that is currently optimized for avr-gcc 4.8.2. It can be built using either CMake or Eclipse with the [AVR Eclipse plugin](https://avr-eclipse.sourceforge.net/wiki/index.php/The_AVR_Eclipse_Plugin). To build with CMake:
+
+```
+mkdir build
+cd build
+cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain-avr.cmake ..
+make
+```
+
+This will result in a generated SIMMProgrammer.bin file which can be programmed to the board using the [Windows/Mac/Linux software](https://github.com/dougg3/mac-rom-simm-programmer.software).
+
 # Videos
 
 ## ROM SIMM
