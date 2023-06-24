@@ -101,10 +101,10 @@ void USBD_Start(void)
     USBD_CLR_SE0();
 
     /* Clear USB-related interrupts before enable interrupt */
-    USBD_CLR_INT_FLAG(USBD_INT_BUS | USBD_INT_USB | USBD_INT_FLDET | USBD_INT_WAKEUP);
+    USBD_CLR_INT_FLAG(USBD_INT_BUS | USBD_INT_USB | USBD_INTEN_WKEN_Msk);
 
     /* Enable USB-related interrupts. */
-    USBD_ENABLE_INT(USBD_INT_BUS | USBD_INT_USB | USBD_INT_FLDET | USBD_INT_WAKEUP);
+    USBD_ENABLE_INT(USBD_INT_BUS | USBD_INT_USB | USBD_INTEN_WKEN_Msk);
 }
 
 /**
