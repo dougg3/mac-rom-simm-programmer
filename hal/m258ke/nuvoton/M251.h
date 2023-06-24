@@ -609,42 +609,4 @@ typedef volatile uint64_t vu64;       ///< Define 64-bit unsigned volatile data 
 
 /** @} end of group Legacy_Constants */
 
-
-/******************************************************************************/
-/*                         Peripheral header files                            */
-/******************************************************************************/
-#include "bpwm.h"
-#include "sys.h"
-#include "clk.h"
-#include "uart.h"
-#include "opa.h"
-#include "acmp.h"
-#include "rtc.h"
-#include "fmc.h"
-#include "gpio.h"
-#include "i2c.h"
-#include "pdma.h"
-#include "pwm.h"
-#include "qspi.h"
-#include "spi.h"
-#include "timer.h"
-#include "timer_pwm.h"
-#include "usci_i2c.h"
-#include "usci_spi.h"
-#include "usci_uart.h"
-#include "usbd.h"
-#include "rtc.h"
-#include "crc.h"
-#include "crypto.h"
-#include "wdt.h"
-#include "wwdt.h"
-#include "eadc.h"
-#include "dac.h"
-#include "ebi.h"
-#include "psio.h"
-#include "sc.h"
-#include "scuart.h"
-#include "lcd.h"
-#include "tk.h"
-
 #endif  /* __M251_H__ */
