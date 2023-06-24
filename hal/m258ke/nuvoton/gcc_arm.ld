@@ -185,8 +185,8 @@ SECTIONS
 	} > RAM
 
 	/* Set stack top to end of RAM, and stack limit move down by
-	 * size of stack_dummy section */
-	__StackTop = ORIGIN(RAM) + LENGTH(RAM);
+	 * size of stack_dummy section. Reserve 4 bytes at end of RAM for magic number. */
+	__StackTop = ORIGIN(RAM) + LENGTH(RAM) - 4;
 	__StackLimit = __StackTop - SIZEOF(.stack_dummy);
 	PROVIDE(__stack = __StackTop);
 
