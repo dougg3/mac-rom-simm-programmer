@@ -68,6 +68,9 @@ void Board_Init(void)
 
 	// Start the timer, prescaler = 48, so 1 MHz
 	TIMER0->CTL = TIMER_CTL_CNTEN_Msk | (3UL << TIMER_CTL_OPMODE_Pos) | 47;
+
+	// Disable WDT now; the main firmware is booted.
+	WDT->CTL = (6 << WDT_CTL_TOUTSEL_Pos);
 }
 
 /** Determines if a brownout was detected at startup
