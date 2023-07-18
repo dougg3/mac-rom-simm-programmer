@@ -214,8 +214,12 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 	ParallelBus_SetDataPulldowns(SIMM_DATA_PINS_MASK);
 	ParallelBus_SetCSPullup(false);
 	ParallelBus_SetCSPulldown(true);
-	ParallelBus_SetOEPullup(false);
-	ParallelBus_SetOEPulldown(true);
+	// We can't enable pulldowns on both CS and OE simultaneously, because if
+	// they're both low at the same time, a SIMM mounted in the socket will
+	// output data and interfere with our electrical test. So only enable CS's
+	// pulldown at first. Enable a pullup on OE just to be sure it's not low.
+	ParallelBus_SetOEPullup(true);
+	ParallelBus_SetOEPulldown(false);
 	ParallelBus_SetWEPullup(false);
 	ParallelBus_SetWEPulldown(true);
 
@@ -277,6 +281,17 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 	}
 	curPin++;
 
+	// Now that we've tested CS, turn off its pulldown and turn on OE's pulldown instead.
+	// Pull up CS -- again, this ensures that a SIMM won't output data and interfere with
+	// the electrical test if it's mounted in the socket right now.
+	ParallelBus_SetOEPullup(false);
+	ParallelBus_SetCSPulldown(false);
+	ParallelBus_SetOEPulldown(true);
+	ParallelBus_SetCSPullup(true);
+
+	// Wait a brief moment...
+	DelayMS(DELAY_SETTLE_TIME_MS);
+
 	// Output enable...
 	if (ParallelBus_ReadOE())
 	{
@@ -299,8 +314,8 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 	}
 	curPin++; // Doesn't need to be here, but for consistency I'm leaving it.
 
-	// Clear the pulldowns now that we're done; we won't need them anymore
-	// for the rest of the testing
+	// Clear the pulldowns now that we're done with 5V short testing; we won't
+	// need them anymore for the rest of the electrical test.
 	ParallelBus_SetAddressPulldowns(0);
 	ParallelBus_SetDataPulldowns(0);
 	ParallelBus_SetCSPulldown(false);
