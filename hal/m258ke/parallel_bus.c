@@ -74,15 +74,24 @@ void ParallelBus_Init(void)
 	// Configure all address lines as outputs, outputting address 0
 	ParallelBus_SetAddressDir((1UL << (PARALLEL_BUS_HIGHEST_ADDRESS_LINE + 1)) - 1);
 	ParallelBus_SetAddress(0);
+	ParallelBus_SetAddressPullups(0);
+	ParallelBus_SetAddressPulldowns(0);
 
 	// Set all data lines to pulled-up inputs
 	ParallelBus_SetDataAllInput();
 	ParallelBus_SetDataPullups(0xFFFFFFFFUL);
+	ParallelBus_SetDataPulldowns(0);
 
 	// Control lines
 	ParallelBus_SetCSDir(true);
+	ParallelBus_SetCSPullup(false);
+	ParallelBus_SetCSPulldown(false);
 	ParallelBus_SetOEDir(true);
+	ParallelBus_SetOEPullup(false);
+	ParallelBus_SetOEPulldown(false);
 	ParallelBus_SetWEDir(true);
+	ParallelBus_SetWEPullup(false);
+	ParallelBus_SetWEPulldown(false);
 
 	// Default to only CS asserted
 	DeassertControl(FLASH_WE_PIN);
@@ -360,15 +369,55 @@ void ParallelBus_SetAddressPullups(uint32_t pullups)
 	// For efficiency, we talk directly to the registers in this function,
 	// rather than going through the GPIO class.
 
-	// There are actually 2 bits per pin. We want to write 00 if disabled,
-	// 01 if enabled. So we need to interleave a zero in between each bit
-	// to match the register layout.
+	// There are actually 2 bits per pin. The lowest bit is the pullup control.
+	// The highest bit is the pulldown control, which we want to leave alone.
+	// We want to write 0 to pullup if disabled, 1 if enabled. So we need to
+	// interleave a zero in between each bit to avoid touching the pulldowns.
 
-	const uint32_t regMaskB = 0xFFFFFFUL;
-	const uint32_t regMaskC = 0x3FFFFUL;
+	const uint32_t regMaskB = 0x555555UL;
+	const uint32_t regMaskC = 0x15555UL;
 
 	const uint32_t regB = InterleaveZeros(addrB);
 	const uint32_t regC = InterleaveZeros(addrC);
+
+	uint32_t tmpB = PB->PUSEL;
+	uint32_t tmpC = PC->PUSEL;
+	tmpB &= ~regMaskB;
+	tmpB |= regB;
+	tmpC &= ~regMaskC;
+	tmpC |= regC;
+	PB->PUSEL = tmpB;
+	PC->PUSEL = tmpC;
+}
+
+/** Sets which pins on the 21-bit address bus should be pulled down (if inputs)
+ *
+ * @param pulldowns Mask of pins that should be pulldowns.
+ *
+ * This would typically only be used for testing. Under normal operation, the
+ * address bus will be outputting, so the pulldowns are irrelevant.
+ */
+void ParallelBus_SetAddressPulldowns(uint32_t pulldowns)
+{
+	const uint32_t addrMaskB = 0xFFFUL;
+	const uint32_t addrMaskC = 0x1FFUL;
+
+	const uint32_t addrB = pulldowns & addrMaskB;
+	const uint32_t addrC = (pulldowns >> 12) & addrMaskC;
+
+	// For efficiency, we talk directly to the registers in this function,
+	// rather than going through the GPIO class.
+
+	// There are actually 2 bits per pin. The lowest bit is the pullup control,
+	// which we want to leave alone. The highest bit is the pulldown control.
+	// We want to write 0 to pulldown if disabled, 1 if enabled. So we need to
+	// interleave a zero in between each bit to avoid touching the pullups.
+
+	const uint32_t regMaskB = 0xAAAAAAUL;
+	const uint32_t regMaskC = 0x2AAAAUL;
+
+	const uint32_t regB = InterleaveZeros(addrB) << 1;
+	const uint32_t regC = InterleaveZeros(addrC) << 1;
 
 	uint32_t tmpB = PB->PUSEL;
 	uint32_t tmpC = PC->PUSEL;
@@ -401,17 +450,66 @@ void ParallelBus_SetDataPullups(uint32_t pullups)
 	// For efficiency, we talk directly to the registers in this function,
 	// rather than going through the GPIO class.
 
-	// There are actually 2 bits per pin. We want to write 00 if input,
-	// 01 if output. So we need to interleave a zero in between each bit
-	// to match the register layout.
+	// There are actually 2 bits per pin. The lowest bit is the pullup control.
+	// The highest bit is the pulldown control, which we want to leave alone.
+	// We want to write 0 to pullup if disabled, 1 if enabled. So we need to
+	// interleave a zero in between each bit to avoid touching the pulldowns.
 
-	const uint32_t regMaskA = 0xFFFFFFUL;
-	const uint32_t regMaskC = 0x3FC0000UL;
-	const uint32_t regMaskE = 0xFFFFFFFFUL;
+	const uint32_t regMaskA = 0x555555UL;
+	const uint32_t regMaskC = 0x1540000UL;
+	const uint32_t regMaskE = 0x55555555UL;
 
 	const uint32_t regA = InterleaveZeros(dataA);
 	const uint32_t regC = InterleaveZeros(dataC);
 	const uint32_t regE = InterleaveZeros(dataE);
+
+	uint32_t tmpA = PA->PUSEL;
+	uint32_t tmpC = PC->PUSEL;
+	uint32_t tmpE = PE->PUSEL;
+	tmpA &= ~regMaskA;
+	tmpA |= regA;
+	tmpC &= ~regMaskC;
+	tmpC |= regC;
+	tmpE &= ~regMaskE;
+	tmpE |= regE;
+	PA->PUSEL = tmpA;
+	PC->PUSEL = tmpC;
+	PE->PUSEL = tmpE;
+}
+
+/** Sets which pins on the 32-bit data bus should be pulled down (if inputs)
+ *
+ * @param pulldowns Mask of pins that should be pulldowns.
+ *
+ * Typically these will be enabled in order to provide a default value if a
+ * chip isn't responding properly. Sometimes it's useful to customize it during
+ * testing though.
+ */
+void ParallelBus_SetDataPulldowns(uint32_t pulldowns)
+{
+	const uint32_t dataMaskA = 0xFFFUL;
+	const uint32_t dataMaskC = 0x1E00UL;
+	const uint32_t dataMaskE = 0xFFFFUL;
+
+	const uint32_t dataA = pulldowns & dataMaskA;
+	const uint32_t dataC = (pulldowns >> 3) & dataMaskC; // bits 0-11 are in dataA, but dataMaskC starts at bit 9, so shift by 3
+	const uint32_t dataE = (pulldowns >> 16) & dataMaskE;
+
+	// For efficiency, we talk directly to the registers in this function,
+	// rather than going through the GPIO class.
+
+	// There are actually 2 bits per pin. The lowest bit is the pullup control,
+	// which we want to leave alone. The highest bit is the pulldown control.
+	// We want to write 0 to pulldown if disabled, 1 if enabled. So we need to
+	// interleave a zero in between each bit to avoid touching the pullups.
+
+	const uint32_t regMaskA = 0xAAAAAAUL;
+	const uint32_t regMaskC = 0x2A80000UL;
+	const uint32_t regMaskE = 0xAAAAAAAAUL;
+
+	const uint32_t regA = InterleaveZeros(dataA) << 1;
+	const uint32_t regC = InterleaveZeros(dataC) << 1;
+	const uint32_t regE = InterleaveZeros(dataE) << 1;
 
 	uint32_t tmpA = PA->PUSEL;
 	uint32_t tmpC = PC->PUSEL;
@@ -439,6 +537,18 @@ void ParallelBus_SetCSPullup(bool pullup)
 	GPIO_SetPullup(flashCSPin, pullup);
 }
 
+/** Sets whether the CS pin is pulled down, if it's an input.
+ *
+ * @param pulldown True if the CS pin should be pulled down, false if not
+ *
+ * This would typically only be used for testing. Under normal operation, this
+ * pin will be set as an output, so the pulldown state is irrelevant.
+ */
+void ParallelBus_SetCSPulldown(bool pulldown)
+{
+	GPIO_SetPulldown(flashCSPin, pulldown);
+}
+
 /** Sets whether the OE pin is pulled up, if it's an input.
  *
  * @param pullup True if the OE pin should be pulled up, false if not
@@ -451,6 +561,18 @@ void ParallelBus_SetOEPullup(bool pullup)
 	GPIO_SetPullup(flashOEPin, pullup);
 }
 
+/** Sets whether the OE pin is pulled down, if it's an input.
+ *
+ * @param pulldown True if the OE pin should be pulled down, false if not
+ *
+ * This would typically only be used for testing. Under normal operation, this
+ * pin will be set as an output, so the pulldown state is irrelevant.
+ */
+void ParallelBus_SetOEPulldown(bool pulldown)
+{
+	GPIO_SetPulldown(flashOEPin, pulldown);
+}
+
 /** Sets whether the WE pin is pulled up, if it's an input.
  *
  * @param pullup True if the WE pin should be pulled up, false if not
@@ -461,6 +583,18 @@ void ParallelBus_SetOEPullup(bool pullup)
 void ParallelBus_SetWEPullup(bool pullup)
 {
 	GPIO_SetPullup(flashWEPin, pullup);
+}
+
+/** Sets whether the WE pin is pulled down, if it's an input.
+ *
+ * @param pulldown True if the WE pin should be pulled down, false if not
+ *
+ * This would typically only be used for testing. Under normal operation, this
+ * pin will be set as an output, so the pulldown state is irrelevant.
+ */
+void ParallelBus_SetWEPulldown(bool pulldown)
+{
+	GPIO_SetPulldown(flashWEPin, pulldown);
 }
 
 /** Reads the current data on the address bus.
