@@ -24,6 +24,7 @@
 #include "simm_electrical_test.h"
 #include "../hal/parallel_bus.h"
 #include "hardware.h"
+#include "board_hw.h"
 
 /// The index of the highest SIMM address pin
 #define SIMM_HIGHEST_ADDRESS_LINE			20
@@ -40,6 +41,8 @@
 
 /// The index reported as a short when it's a ground short
 #define GROUND_FAIL_INDEX					0xFF
+/// The index reported as a short when it's a +5V short
+#define VCC_FAIL_INDEX						0xFE
 /// The index reported when A0 is shorted
 #define FIRST_ADDRESS_LINE_FAIL_INDEX		0
 /// The index reported when A20 is shorted
@@ -101,10 +104,15 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 	ParallelBus_SetOEDir(false);
 	ParallelBus_SetWEDir(false);
 	ParallelBus_SetAddressPullups(SIMM_ADDRESS_PINS_MASK);
+	ParallelBus_SetAddressPulldowns(0);
 	ParallelBus_SetDataPullups(SIMM_DATA_PINS_MASK);
+	ParallelBus_SetDataPulldowns(0);
 	ParallelBus_SetCSPullup(true);
+	ParallelBus_SetCSPulldown(false);
 	ParallelBus_SetOEPullup(true);
+	ParallelBus_SetOEPulldown(false);
 	ParallelBus_SetWEPullup(true);
+	ParallelBus_SetWEPulldown(false);
 
 	// Wait a brief moment...
 	DelayMS(DELAY_SETTLE_TIME_MS);
@@ -196,7 +204,109 @@ int SIMMElectricalTest_Run(void (*errorHandler)(uint8_t, uint8_t))
 
 	// OK, now we know which lines are shorted to ground. We need to keep that
 	// in mind, because those lines will now show as shorted to ALL other
-	// lines...ignore them during tests to find other independent shorts
+	// lines...ignore them during tests to find other independent shorts.
+
+	// If the arch also supports checking for shorts to VCC, check for those next.
+#if BOARD_SUPPORTS_PULLDOWNS
+	ParallelBus_SetAddressPullups(0);
+	ParallelBus_SetAddressPulldowns(SIMM_ADDRESS_PINS_MASK);
+	ParallelBus_SetDataPullups(0);
+	ParallelBus_SetDataPulldowns(SIMM_DATA_PINS_MASK);
+	ParallelBus_SetCSPullup(false);
+	ParallelBus_SetCSPulldown(true);
+	ParallelBus_SetOEPullup(false);
+	ParallelBus_SetOEPulldown(true);
+	ParallelBus_SetWEPullup(false);
+	ParallelBus_SetWEPulldown(true);
+
+	// Wait a brief moment...
+	DelayMS(DELAY_SETTLE_TIME_MS);
+
+	// Now loop through every pin and check it.
+	curPin = 0;
+
+	// Read the address pins back first
+	readback = ParallelBus_ReadAddress();
+	// Check each bit for a HIGH which would indicate a short to VCC
+	for (i = 0; i <= SIMM_HIGHEST_ADDRESS_LINE; i++)
+	{
+		// Did we find a low bit?
+		if (readback & 1)
+		{
+			// That means this pin is shorted to ground.
+			// So notify the caller that we have a ground short on this pin
+			if (errorHandler)
+			{
+				errorHandler(curPin, VCC_FAIL_INDEX);
+			}
+
+			// And of course increment the error counter.
+			numErrors++;
+		}
+
+		// No matter what, though, move on to the next bit and pin.
+		readback >>= 1;
+		curPin++;
+	}
+
+	// Repeat the exact same process for the data pins
+	readback = ParallelBus_ReadData();
+	for (i = 0; i <= SIMM_HIGHEST_DATA_LINE; i++)
+	{
+		if (readback & 1)
+		{
+			if (errorHandler)
+			{
+				errorHandler(curPin, VCC_FAIL_INDEX);
+			}
+			numErrors++;
+		}
+
+		readback >>= 1;
+		curPin++;
+	}
+
+	// Check chip select in the same way...
+	if (ParallelBus_ReadCS())
+	{
+		if (errorHandler)
+		{
+			errorHandler(curPin, VCC_FAIL_INDEX);
+		}
+		numErrors++;
+	}
+	curPin++;
+
+	// Output enable...
+	if (ParallelBus_ReadOE())
+	{
+		if (errorHandler)
+		{
+			errorHandler(curPin, VCC_FAIL_INDEX);
+		}
+		numErrors++;
+	}
+	curPin++;
+
+	// Write enable...
+	if (ParallelBus_ReadWE())
+	{
+		if (errorHandler)
+		{
+			errorHandler(curPin, VCC_FAIL_INDEX);
+		}
+		numErrors++;
+	}
+	curPin++; // Doesn't need to be here, but for consistency I'm leaving it.
+
+	// Clear the pulldowns now that we're done; we won't need them anymore
+	// for the rest of the testing
+	ParallelBus_SetAddressPulldowns(0);
+	ParallelBus_SetDataPulldowns(0);
+	ParallelBus_SetCSPulldown(false);
+	ParallelBus_SetOEPulldown(false);
+	ParallelBus_SetWEPulldown(false);
+#endif
 
 	// Now, check each individual line vs. all other lines on the SIMM for any
 	// shorts between them
