@@ -75,6 +75,18 @@ void GPIO_SetPullup(GPIOPin pin, bool pullup)
 	GPIO_Set(pin, pullup);
 }
 
+/**
+ * @brief Sets whether an input GPIO pin is pulled down
+ * @param pin The pin
+ * @param pulldown True if it should be pulled down, false if not
+ */
+void GPIO_SetPulldown(GPIOPin pin, bool pulldown)
+{
+	(void)pin;
+	(void)pulldown;
+	// The AVR doesn't support pulldowns
+}
+
 /** Turns a GPIO pin on (sets it high)
  *
  * @param pin The pin

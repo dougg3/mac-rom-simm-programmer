@@ -64,13 +64,31 @@ void GPIO_SetPullup(GPIOPin pin, bool pullup)
 	if (pullup)
 	{
 		uint32_t tmp = gpioRegs[pin.port]->PUSEL;
-		tmp &= ~(2UL << 2*pin.pin);
 		tmp |= (1UL << 2*pin.pin);
 		gpioRegs[pin.port]->PUSEL = tmp;
 	}
 	else
 	{
-		gpioRegs[pin.port]->PUSEL &= ~(3UL << 2*pin.pin);
+		gpioRegs[pin.port]->PUSEL &= ~(1UL << 2*pin.pin);
+	}
+}
+
+/** Sets whether an input GPIO pin is pulled down
+ *
+ * @param pin The pin
+ * @param pulldown True if it should be pulled down, false if not
+ */
+void GPIO_SetPulldown(GPIOPin pin, bool pulldown)
+{
+	if (pulldown)
+	{
+		uint32_t tmp = gpioRegs[pin.port]->PUSEL;
+		tmp |= (2UL << 2*pin.pin);
+		gpioRegs[pin.port]->PUSEL = tmp;
+	}
+	else
+	{
+		gpioRegs[pin.port]->PUSEL &= ~(2UL << 2*pin.pin);
 	}
 }
 
