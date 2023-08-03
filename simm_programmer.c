@@ -536,9 +536,9 @@ static void SIMMProgrammer_HandleErasePortionReadPosLengthByte(uint8_t byte)
 			// Ensure they are within the limits of the chip size too
 			if (chipType == ParallelFlash_SST39SF040_x4)
 			{
-				if (boundary <= (2 * 1024UL * 1024UL))
+				if (boundary <= (8 * 1024UL * 1024UL))
 				{
-					// OK! We're erasing certain sectors of a 2 MB SIMM.
+					// OK! We're erasing certain sectors of a SIMM.
 					USBCDC_SendByte(ProgrammerErasePortionOK);
 					// Send the response immediately, it could take a while.
 					USBCDC_Flush();
@@ -553,7 +553,7 @@ static void SIMMProgrammer_HandleErasePortionReadPosLengthByte(uint8_t byte)
 			{
 				if (boundary <= (8 * 1024UL * 1024UL))
 				{
-					// OK! We're erasing certain sectors of an 8 MB SIMM.
+					// OK! We're erasing certain sectors of a SIMM.
 					USBCDC_SendByte(ProgrammerErasePortionOK);
 					// Send the response immediately, it could take a while.
 					USBCDC_Flush();
