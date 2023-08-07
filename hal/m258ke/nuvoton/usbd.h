@@ -515,24 +515,6 @@ extern const S_USBD_INFO_T gsInfo;
   */
 #define USBD_GET_EP_STALL(ep)        (*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].CFGP + (uint32_t)((ep) << 4))) & USBD_CFGP_SSTALL_Msk)
 
-/**
-  * @brief      To support byte access between USB SRAM and system SRAM
-  *
-  * @param[in]  dest Destination pointer.
-  *
-  * @param[in]  src  Source pointer.
-  *
-  * @param[in]  size Byte count.
-  *
-  *
-  * @details    This function will copy the number of data specified by size and src parameters to the address specified by dest parameter.
-  *
-  */
-__STATIC_INLINE void USBD_MemCopy(uint8_t *dest, uint8_t *src, uint32_t size)
-{
-    while (size--) *dest++ = *src++;
-}
-
 
 /**
   * @brief       Set USB endpoint stall state
@@ -638,6 +620,7 @@ typedef void (*CLASS_REQ)(void);                                /*!< Functional 
 /*--------------------------------------------------------------------*/
 void USBD_Open(const S_USBD_INFO_T *param, CLASS_REQ pfnClassReq);
 void USBD_Start(void);
+void USBD_MemCopy(uint8_t *dest, uint8_t *src, uint32_t size);
 void USBD_GetSetupPacket(uint8_t *buf);
 void USBD_ProcessSetupPacket(void);
 void USBD_StandardRequest(void);
