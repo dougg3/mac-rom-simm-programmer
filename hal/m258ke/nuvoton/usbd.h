@@ -41,9 +41,9 @@ extern "C"
 */
 typedef struct s_usbd_info
 {
-    uint8_t *gu8DevDesc;            /*!< Pointer for USB Device Descriptor          */
-    uint8_t *gu8ConfigDesc;         /*!< Pointer for USB Configuration Descriptor   */
-    uint8_t **gu8StringDesc;        /*!< Pointer for USB String Descriptor pointers */
+    uint8_t const *gu8DevDesc;            /*!< Pointer for USB Device Descriptor          */
+    uint8_t const *gu8ConfigDesc;         /*!< Pointer for USB Configuration Descriptor   */
+    uint8_t const * const *gu8StringDesc; /*!< Pointer for USB String Descriptor pointers */
 } S_USBD_INFO_T; /*!< Device description structure */
 
 extern const S_USBD_INFO_T gsInfo;
