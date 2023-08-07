@@ -9,6 +9,7 @@
 
 #include <string.h>
 #include "NuMicro.h"
+#include "usbd.h"
 
 #if 0
     #define DBG_PRINTF      printf
