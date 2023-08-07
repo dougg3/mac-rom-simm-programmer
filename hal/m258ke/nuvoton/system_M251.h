@@ -48,21 +48,6 @@ extern uint32_t PllClock;           /*!< PLL Output Clock Frequency           */
 extern void SystemInit(void);
 
 /**
- * @brief    Update the Variable SystemCoreClock
- *
- * @details  This function is used to update the variable SystemCoreClock
- *           and must be called whenever the core clock is changed.
- */
-extern void SystemCoreClockUpdate(void);
-
-/**
- * @brief    Set UART0 Default MPF
- *
- * @details  The initialization of uart0 default multi function pin.
- */
-extern void Uart0DefaultMPF(void);
-
-/**
  * @brief  Check if debug message finished
  *
  * @return   1 Message is finished.

@@ -27,44 +27,6 @@ uint32_t CyclesPerUs      = (__HSI / 1000000);  /*!< Cycles per micro second    
 uint32_t PllClock         = __HSI;              /*!< PLL Output Clock Frequency          */
 const uint32_t gau32ClkSrcTbl[8] = {__HXT, __LXT, 0UL, __LIRC, 0UL, __MIRC, 0UL, __HIRC};
 
-
-/**
- * @brief    Update the Variable SystemCoreClock
- *
- * @details  This function is used to update the variable SystemCoreClock
- *           and must be called whenever the core clock is changed.
- */
-void SystemCoreClockUpdate(void)
-{
-    uint32_t u32Freq, u32ClkSrc;
-    uint32_t u32HclkDiv;
-
-    u32ClkSrc = CLK->CLKSEL0 & CLK_CLKSEL0_HCLKSEL_Msk;
-
-    /* Update PLL Clock */
-    PllClock = CLK_GetPLLClockFreq();
-
-    if (u32ClkSrc != CLK_CLKSEL0_HCLKSEL_PLL)
-    {
-        /* Use the clock sources directly */
-        u32Freq = gau32ClkSrcTbl[u32ClkSrc];
-    }
-    else
-    {
-        /* Use PLL clock */
-        u32Freq = PllClock;
-    }
-
-    u32HclkDiv = (CLK->CLKDIV0 & CLK_CLKDIV0_HCLKDIV_Msk) + 1;
-
-    /* Update System Core Clock */
-    SystemCoreClock = u32Freq / u32HclkDiv;
-
-    CyclesPerUs = (SystemCoreClock + 500000) / 1000000;
-}
-
-
-
 /**
  * @brief    System Initialization
  *
@@ -112,22 +74,3 @@ void AssertError(uint8_t *file, uint32_t line)
     while (1) ;
 }
 #endif
-
-/**
- * @brief    Set UART0 Default MPF
- *
- * @details  The initialization of uart0 default multi function pin.
- */
-#if defined( __ICCARM__ )
-    __WEAK
-#else
-    __attribute__((weak))
-#endif
-void Uart0DefaultMPF(void)
-{
-
-    /* Set GPB multi-function pins for UART0 RXD and TXD */
-    SYS->GPB_MFPH = (SYS->GPB_MFPH & ~SYS_GPB_MFPH_PB12MFP_Msk) | SYS_GPB_MFPH_PB12MFP_UART0_RXD;
-    SYS->GPB_MFPH = (SYS->GPB_MFPH & ~SYS_GPB_MFPH_PB13MFP_Msk) | SYS_GPB_MFPH_PB13MFP_UART0_TXD;
-
-}
