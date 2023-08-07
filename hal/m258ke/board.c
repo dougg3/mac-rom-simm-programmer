@@ -51,6 +51,12 @@ void Board_Init(void)
 	// Enable USB device controller
 	CLK->APBCLK0 |= CLK_APBCLK0_USBDCKEN_Msk;
 
+	// Enable timer 0
+	CLK->APBCLK0 |= CLK_APBCLK0_TMR0CKEN_Msk;
+
+	// Timer 0 clock source = 48 MHz HIRC
+	CLK->CLKSEL1 = (CLK->CLKSEL1 & (~(CLK_CLKSEL1_TMR0SEL_Msk))) | (7UL << CLK_CLKSEL1_TMR0SEL_Pos);
+
 	// Enable all GPIO
 	CLK->AHBCLK |=
 			CLK_AHBCLK_GPACKEN_Msk |
@@ -59,6 +65,9 @@ void Board_Init(void)
 			CLK_AHBCLK_GPDCKEN_Msk |
 			CLK_AHBCLK_GPECKEN_Msk |
 			CLK_AHBCLK_GPFCKEN_Msk;
+
+	// Start the timer, prescaler = 48, so 1 MHz
+	TIMER0->CTL = TIMER_CTL_CNTEN_Msk | (3UL << TIMER_CTL_OPMODE_Pos) | 47;
 }
 
 /** Determines if a brownout was detected at startup
