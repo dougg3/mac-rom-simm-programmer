@@ -43,6 +43,7 @@ typedef struct GPIOPin
 
 void GPIO_SetDirection(GPIOPin pin, bool output);
 void GPIO_SetPullup(GPIOPin pin, bool pullup);
+void GPIO_SetPulldown(GPIOPin pin, bool pulldown);
 void GPIO_SetOn(GPIOPin pin);
 void GPIO_SetOff(GPIOPin pin);
 void GPIO_Toggle(GPIOPin pin);
