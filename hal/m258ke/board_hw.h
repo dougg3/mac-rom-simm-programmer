@@ -30,6 +30,7 @@
 #include "../usbcdc.h"
 
 #define BOARD_LED_INVERTED true
+#define BOARD_SUPPORTS_PULLDOWNS true
 
 /** Gets the GPIO pin on the board that controls the status LED
  *
