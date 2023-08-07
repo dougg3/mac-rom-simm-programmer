@@ -108,6 +108,24 @@ void USBD_Start(void)
 }
 
 /**
+  * @brief      To support byte access between USB SRAM and system SRAM
+  *
+  * @param[in]  dest Destination pointer.
+  *
+  * @param[in]  src  Source pointer.
+  *
+  * @param[in]  size Byte count.
+  *
+  *
+  * @details    This function will copy the number of data specified by size and src parameters to the address specified by dest parameter.
+  *
+  */
+void USBD_MemCopy(uint8_t *dest, uint8_t *src, uint32_t size)
+{
+    while (size--) *dest++ = *src++;
+}
+
+/**
   * @brief      Get the received SETUP packet
   *
   * @param[in]  buf A buffer pointer used to store 8-byte SETUP packet.
