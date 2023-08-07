@@ -42,10 +42,15 @@ void ParallelBus_SetOEDir(bool output);
 void ParallelBus_SetWEDir(bool output);
 
 void ParallelBus_SetAddressPullups(uint32_t pullups);
+void ParallelBus_SetAddressPulldowns(uint32_t pulldowns);
 void ParallelBus_SetDataPullups(uint32_t pullups);
+void ParallelBus_SetDataPulldowns(uint32_t pulldowns);
 void ParallelBus_SetCSPullup(bool pullup);
+void ParallelBus_SetCSPulldown(bool pulldown);
 void ParallelBus_SetOEPullup(bool pullup);
+void ParallelBus_SetOEPulldown(bool pulldown);
 void ParallelBus_SetWEPullup(bool pullup);
+void ParallelBus_SetWEPulldown(bool pulldown);
 
 uint32_t ParallelBus_ReadAddress(void);
 uint32_t ParallelBus_ReadData(void);
