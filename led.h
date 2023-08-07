@@ -27,6 +27,8 @@
 #include "hal/board.h"
 #include "hal/gpio.h"
 
+static inline void LED_Off(void);
+
 /** Initializes the LED and turns it off
  *
  */
@@ -34,7 +36,7 @@ static inline void LED_Init(void)
 {
 	GPIOPin ledPin = Board_LEDPin();
 	GPIO_SetDirection(ledPin, true);
-	GPIO_SetOff(ledPin);
+	LED_Off();
 }
 
 /** Turns the LED on
@@ -42,7 +44,11 @@ static inline void LED_Init(void)
  */
 static inline void LED_On(void)
 {
+#if BOARD_LED_INVERTED
+	GPIO_SetOff(Board_LEDPin());
+#else
 	GPIO_SetOn(Board_LEDPin());
+#endif
 }
 
 /** Turns the LED off
@@ -50,7 +56,11 @@ static inline void LED_On(void)
  */
 static inline void LED_Off(void)
 {
+#if BOARD_LED_INVERTED
+	GPIO_SetOn(Board_LEDPin());
+#else
 	GPIO_SetOff(Board_LEDPin());
+#endif
 }
 
 /** Toggles the LED
