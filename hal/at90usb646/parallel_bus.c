@@ -313,6 +313,17 @@ void ParallelBus_SetAddressPullups(uint32_t pullups)
 	ParallelBus_SetAddress(pullups);
 }
 
+/** Sets which pins on the 21-bit address bus should be pulled down (if inputs)
+ *
+ * @param pulldowns Mask of pins that should be pulldowns.
+ *
+ * Not supported on the AVR. It's only for electrical testing, so no big deal.
+ */
+void ParallelBus_SetAddressPulldowns(uint32_t pulldowns)
+{
+	(void)pulldowns;
+}
+
 /** Sets which pins on the 32-bit data bus should be pulled up (if inputs)
  *
  * @param pullups Mask of pins that should be pullups.
@@ -340,6 +351,17 @@ void ParallelBus_SetDataPullups(uint32_t pullups)
 	MCP23S17_SetPullups(&mcp23s17, u.dataShorts[1]);
 }
 
+/** Sets which pins on the 32-bit data bus should be pulled down (if inputs)
+ *
+ * @param pulldowns Mask of pins that should be pulldowns.
+ *
+ * Not supported on the AVR. It's only for electrical testing, so no big deal.
+ */
+void ParallelBus_SetDataPulldowns(uint32_t pulldowns)
+{
+	(void)pulldowns;
+}
+
 /** Sets whether the CS pin is pulled up, if it's an input.
  *
  * @param pullup True if the CS pin should be pulled up, false if not
@@ -350,6 +372,17 @@ void ParallelBus_SetDataPullups(uint32_t pullups)
 void ParallelBus_SetCSPullup(bool pullup)
 {
 	GPIO_SetPullup(flashCSPin, pullup);
+}
+
+/** Sets whether the CS pin is pulled down, if it's an input.
+ *
+ * @param pulldown True if the CS pin should be pulled down, false if not
+ *
+ * Not supported on the AVR. It's only for electrical testing, so no big deal.
+ */
+void ParallelBus_SetCSPulldown(bool pulldown)
+{
+	(void)pulldown;
 }
 
 /** Sets whether the OE pin is pulled up, if it's an input.
@@ -364,6 +397,17 @@ void ParallelBus_SetOEPullup(bool pullup)
 	GPIO_SetPullup(flashOEPin, pullup);
 }
 
+/** Sets whether the OE pin is pulled down, if it's an input.
+ *
+ * @param pulldown True if the OE pin should be pulled down, false if not
+ *
+ * Not supported on the AVR. It's only for electrical testing, so no big deal.
+ */
+void ParallelBus_SetOEPulldown(bool pulldown)
+{
+	(void)pulldown;
+}
+
 /** Sets whether the WE pin is pulled up, if it's an input.
  *
  * @param pullup True if the WE pin should be pulled up, false if not
@@ -374,6 +418,17 @@ void ParallelBus_SetOEPullup(bool pullup)
 void ParallelBus_SetWEPullup(bool pullup)
 {
 	GPIO_SetPullup(flashWEPin, pullup);
+}
+
+/** Sets whether the WE pin is pulled down, if it's an input.
+ *
+ * @param pulldown True if the WE pin should be pulled down, false if not
+ *
+ * Not supported on the AVR. It's only for electrical testing, so no big deal.
+ */
+void ParallelBus_SetWEPulldown(bool pulldown)
+{
+	(void)pulldown;
 }
 
 /** Reads the current data on the address bus.
