@@ -44,22 +44,27 @@ static inline void EnableInterrupts(void)
 	__enable_irq();
 }
 
-/** Blocks for the specified number of milliseconds
- *
- * @param ms The number of milliseconds to wait
- */
-static inline void DelayMS(uint32_t ms)
-{
-
-}
-
 /** Blocks for the specified number of microseconds
  *
  * @param us The number of microseconds to wait
  */
 static inline void DelayUS(uint32_t us)
 {
+	const uint32_t startTime = TIMER0->CNT & 0xFFFFFFUL;
+	uint32_t nowTime;
+	do
+	{
+		nowTime = TIMER0->CNT & 0xFFFFFFUL;
+	} while (((nowTime - startTime) & 0xFFFFFFUL) < us);
+}
 
+/** Blocks for the specified number of milliseconds
+ *
+ * @param ms The number of milliseconds to wait
+ */
+static inline void DelayMS(uint32_t ms)
+{
+	DelayUS(ms * 1000UL);
 }
 
 #endif /* HAL_M258KE_HARDWARE_H_ */
