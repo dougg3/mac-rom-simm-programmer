@@ -58,10 +58,7 @@ static volatile uint32_t s_USBD_u32CtrlOutToggle       = 0ul;
 
 const S_USBD_INFO_T *g_USBD_sINFO;                   /*!< A pointer for USB information structure */
 
-VENDOR_REQ g_USBD_pfnVendorRequest          = NULL;  /*!< USB Vendor Request Functional Pointer */
 CLASS_REQ g_USBD_pfnClassRequest            = NULL;  /*!< USB Class Request Functional Pointer */
-SET_INTERFACE_REQ g_USBD_pfnSetInterface    = NULL;  /*!< USB Set Interface Functional Pointer */
-SET_CONFIG_CB g_USBD_pfnSetConfigCallback   = NULL;  /*!< USB Set configuration callback function pointer */
 uint32_t g_USBD_u32EpStallLock              =  0ul;  /*!< Bit map flag to lock specified EP when SET_FEATURE */
 
 /**
@@ -69,16 +66,14 @@ uint32_t g_USBD_u32EpStallLock              =  0ul;  /*!< Bit map flag to lock s
   *
   * @param[in]  param           The structure of USBD information.
   * @param[in]  pfnClassReq     USB Class request callback function.
-  * @param[in]  pfnSetInterface USB Set Interface request callback function.
   *
   *
   * @details    This function will enable USB controller, USB PHY transceiver and pull-up resistor of USB_D+ pin. USB PHY will drive SE0 to bus.
   */
-void USBD_Open(const S_USBD_INFO_T *param, CLASS_REQ pfnClassReq, SET_INTERFACE_REQ pfnSetInterface)
+void USBD_Open(const S_USBD_INFO_T *param, CLASS_REQ pfnClassReq)
 {
     g_USBD_sINFO            = param;
     g_USBD_pfnClassRequest  = pfnClassReq;
-    g_USBD_pfnSetInterface  = pfnSetInterface;
 
     /* get EP0 maximum packet size */
     s_USBD_u32CtrlMaxPktSize = g_USBD_sINFO->gu8DevDesc[7];
@@ -159,16 +154,6 @@ void USBD_ProcessSetupPacket(void)
             break;
         }
 
-        case REQ_VENDOR:   /* Vendor */
-        {
-            if (g_USBD_pfnVendorRequest != NULL)
-            {
-                g_USBD_pfnVendorRequest();
-            }
-
-            break;
-        }
-
         default:   /* reserved */
         {
             /* Setup error, stall the device */
@@ -236,58 +221,6 @@ void USBD_GetDescriptor(void)
 
             USBD_PrepareCtrlIn((uint8_t *)g_USBD_sINFO->gu8ConfigDesc, u32Len);
 
-            break;
-        }
-
-
-        /* Get BOS Descriptor */
-        case DESC_BOS:
-        {
-            if (g_USBD_sINFO->gu8BosDesc)
-            {
-                u32Len = USBD_Minimum(u32Len, LEN_BOS + LEN_DEVCAP);
-                USBD_PrepareCtrlIn((uint8_t *)g_USBD_sINFO->gu8BosDesc, u32Len);
-            }
-            else
-            {
-                USBD_SET_EP_STALL(EP0);
-                USBD_SET_EP_STALL(EP1);
-            }
-
-            break;
-        }
-
-        /* Get HID Descriptor */
-        case DESC_HID:
-        {
-            /* CV3.0 HID Class Descriptor Test,
-               Need to indicate index of the HID Descriptor within gu8ConfigDescriptor, specifically HID Composite device. */
-            uint32_t u32ConfigDescOffset;   /* u32ConfigDescOffset is configuration descriptor offset (HID descriptor start index) */
-            u32Len = USBD_Minimum(u32Len, LEN_HID);
-            DBG_PRINTF("Get HID desc, %d\n", u32Len);
-
-            u32ConfigDescOffset = g_USBD_sINFO->gu32ConfigHidDescIdx[g_USBD_au8SetupPacket[4]];
-            USBD_PrepareCtrlIn((uint8_t *)&g_USBD_sINFO->gu8ConfigDesc[u32ConfigDescOffset], u32Len);
-
-            break;
-        }
-
-        /* Get Report Descriptor */
-        case DESC_HID_RPT:
-        {
-            DBG_PRINTF("Get HID report, %d\n", u32Len);
-
-            if (u32Len > g_USBD_sINFO->gu32HidReportSize[g_USBD_au8SetupPacket[4]])
-            {
-                u32Len = g_USBD_sINFO->gu32HidReportSize[g_USBD_au8SetupPacket[4]];
-
-                if ((u32Len % s_USBD_u32CtrlMaxPktSize) == 0ul)
-                {
-                    s_USBD_u8CtrlInZeroFlag = (uint8_t)1ul;
-                }
-            }
-
-            USBD_PrepareCtrlIn((uint8_t *)g_USBD_sINFO->gu8HidReportDesc[g_USBD_au8SetupPacket[4]], u32Len);
             break;
         }
 
@@ -499,9 +432,6 @@ void USBD_StandardRequest(void)
             {
                 s_USBD_u32UsbConfig = g_USBD_au8SetupPacket[2];
 
-                if (g_USBD_pfnSetConfigCallback)
-                    g_USBD_pfnSetConfigCallback();
-
                 /* Status stage */
                 USBD_SET_DATA1(EP0);
                 USBD_SET_PAYLOAD_LEN(EP0, 0ul);
@@ -534,11 +464,6 @@ void USBD_StandardRequest(void)
             case SET_INTERFACE:
             {
                 s_USBD_u32UsbAltInterface = g_USBD_au8SetupPacket[2];
-
-                if (g_USBD_pfnSetInterface != NULL)
-                {
-                    g_USBD_pfnSetInterface(s_USBD_u32UsbAltInterface);
-                }
 
                 /* Status stage */
                 USBD_SET_DATA1(EP0);
@@ -738,32 +663,6 @@ void USBD_SwReset(void)
 
     // Reset USB device address
     USBD_SET_ADDR(0ul);
-}
-
-/**
- * @brief       USBD Set Vendor Request
- *
- * @param[in]   pfnVendorReq    Vendor Request Callback Function
- *
- *
- * @details     This function is used to set USBD vendor request callback function
- */
-void USBD_SetVendorRequest(VENDOR_REQ pfnVendorReq)
-{
-    g_USBD_pfnVendorRequest = pfnVendorReq;
-}
-
-/**
- * @brief       The callback function which called when get SET CONFIGURATION request
- *
- * @param[in]   pfnSetConfigCallback    Callback function pointer for SET CONFIGURATION request
- *
- *
- * @details     This function is used to set the callback function which will be called at SET CONFIGURATION request.
- */
-void USBD_SetConfigCallback(SET_CONFIG_CB pfnSetConfigCallback)
-{
-    g_USBD_pfnSetConfigCallback = pfnSetConfigCallback;
 }
 
 

@@ -44,10 +44,6 @@ typedef struct s_usbd_info
     uint8_t *gu8DevDesc;            /*!< Pointer for USB Device Descriptor          */
     uint8_t *gu8ConfigDesc;         /*!< Pointer for USB Configuration Descriptor   */
     uint8_t **gu8StringDesc;        /*!< Pointer for USB String Descriptor pointers */
-    uint8_t **gu8HidReportDesc;     /*!< Pointer for USB HID Report Descriptor      */
-    uint8_t *gu8BosDesc;            /*!< Pointer for USB BOS Descriptor             */
-    uint32_t *gu32HidReportSize;    /*!< Pointer for HID Report descriptor Size     */
-    uint32_t *gu32ConfigHidDescIdx; /*!< Pointer for HID Descriptor start index     */
 } S_USBD_INFO_T; /*!< Device description structure */
 
 extern const S_USBD_INFO_T gsInfo;
@@ -637,12 +633,10 @@ extern volatile uint8_t g_USBD_u8RemoteWakeupEn;
 
 typedef void (*VENDOR_REQ)(void);                               /*!< Functional pointer type definition for Vendor class                                    */
 typedef void (*CLASS_REQ)(void);                                /*!< Functional pointer type declaration for USB class request callback handler             */
-typedef void (*SET_INTERFACE_REQ)(uint32_t u32AltInterface);    /*!< Functional pointer type declaration for USB set interface request callback handler     */
-typedef void (*SET_CONFIG_CB)(void);                            /*!< Functional pointer type declaration for USB set configuration request callback handler */
 
 
 /*--------------------------------------------------------------------*/
-void USBD_Open(const S_USBD_INFO_T *param, CLASS_REQ pfnClassReq, SET_INTERFACE_REQ pfnSetInterface);
+void USBD_Open(const S_USBD_INFO_T *param, CLASS_REQ pfnClassReq);
 void USBD_Start(void);
 void USBD_GetSetupPacket(uint8_t *buf);
 void USBD_ProcessSetupPacket(void);
@@ -652,8 +646,6 @@ void USBD_CtrlIn(void);
 void USBD_PrepareCtrlOut(uint8_t *pu8Buf, uint32_t u32Size);
 void USBD_CtrlOut(void);
 void USBD_SwReset(void);
-void USBD_SetVendorRequest(VENDOR_REQ pfnVendorReq);
-void USBD_SetConfigCallback(SET_CONFIG_CB pfnSetConfigCallback);
 void USBD_LockEpStall(uint32_t u32EpBitmap);
 
 /** @} end of group USBD_EXPORTED_FUNCTIONS */
