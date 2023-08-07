@@ -204,6 +204,8 @@ Reset_Handler:
 
 #endif /*__STARTUP_COPY_MULTIPLE */
 
+#define __STARTUP_CLEAR_BSS
+
 /*  This part of work usually is done in C library startup code. Otherwise,
  *  define this macro to enable it in this startup.
  *
@@ -298,6 +300,7 @@ Reset_Handler:
 	movw r1, 0x00000000
 	str	r1, [r0]
 
+#define __START main
 #ifndef __START
 #define __START _start
 #endif
