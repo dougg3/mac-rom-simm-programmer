@@ -1,0 +1,60 @@
+set(HWSOURCES
+	hal/m258ke/nuvoton/core_cm23.h
+	hal/m258ke/nuvoton/cmsis_armcc.h
+	hal/m258ke/nuvoton/cmsis_armclang.h
+	hal/m258ke/nuvoton/cmsis_compiler.h
+	hal/m258ke/nuvoton/cmsis_gcc.h
+	hal/m258ke/nuvoton/cmsis_version.h
+
+	hal/m258ke/nuvoton/NuMicro.h
+	hal/m258ke/nuvoton/M251.h
+	hal/m258ke/nuvoton/system_M251.c
+	hal/m258ke/nuvoton/system_M251.h
+	hal/m258ke/nuvoton/startup_M251.S
+
+	hal/m258ke/nuvoton/acmp_reg.h
+	hal/m258ke/nuvoton/bpwm_reg.h
+	hal/m258ke/nuvoton/clk_reg.h
+	hal/m258ke/nuvoton/crc_reg.h
+	hal/m258ke/nuvoton/crypto_reg.h
+	hal/m258ke/nuvoton/dac_reg.h
+	hal/m258ke/nuvoton/eadc_reg.h
+	hal/m258ke/nuvoton/ebi_reg.h
+	hal/m258ke/nuvoton/fmc_reg.h
+	hal/m258ke/nuvoton/gpio_reg.h
+	hal/m258ke/nuvoton/i2c_reg.h
+	hal/m258ke/nuvoton/lcd_reg.h
+	hal/m258ke/nuvoton/opa_reg.h
+	hal/m258ke/nuvoton/pdma_reg.h
+	hal/m258ke/nuvoton/psio_reg.h
+	hal/m258ke/nuvoton/pwm_reg.h
+	hal/m258ke/nuvoton/qspi_reg.h
+	hal/m258ke/nuvoton/rtc_reg.h
+	hal/m258ke/nuvoton/sc_reg.h
+	hal/m258ke/nuvoton/spi_reg.h
+	hal/m258ke/nuvoton/sys_reg.h
+	hal/m258ke/nuvoton/timer_reg.h
+	hal/m258ke/nuvoton/tk_reg.h
+	hal/m258ke/nuvoton/uart_reg.h
+	hal/m258ke/nuvoton/ui2c_reg.h
+	hal/m258ke/nuvoton/usbd_reg.h
+	hal/m258ke/nuvoton/uspi_reg.h
+	hal/m258ke/nuvoton/uuart_reg.h
+	hal/m258ke/nuvoton/wdt_reg.h
+	hal/m258ke/nuvoton/wwdt_reg.h
+
+	hal/m258ke/nuvoton/usbd.c
+	hal/m258ke/nuvoton/usbd.h
+
+	hal/m258ke/board.c
+	hal/m258ke/board_hw.h
+	hal/m258ke/descriptors.c
+	hal/m258ke/gpio.c
+	hal/m258ke/gpio_hw.h
+	hal/m258ke/hardware.h
+	hal/m258ke/parallel_bus.c
+	hal/m258ke/spi.c
+	hal/m258ke/spi_private.h
+	hal/m258ke/usbcdc.c
+	hal/m258ke/usbcdc_hw.h
+)
