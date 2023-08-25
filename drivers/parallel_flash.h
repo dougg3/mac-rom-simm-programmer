@@ -77,7 +77,7 @@ void ParallelFlash_IdentifyChips(ParallelFlashChipID *chips);
 
 // Erases the chips/sectors requested
 void ParallelFlash_EraseChips(uint8_t chipsMask);
-bool ParallelFlash_EraseSectors(uint32_t address, uint32_t length, uint8_t chipsMask);
+bool ParallelFlash_EraseSectors(uint32_t address, uint32_t length, uint8_t chipsMask, uint8_t numEraseSectorGroups, ParallelFlashEraseSectorGroup const *eraseSectorGroups);
 
 // Writes a buffer to all 4 chips simultaneously (each uint32_t contains an 8-bit portion for each chip).
 // Optimized variant of this function if we know we're writing to all 4 chips simultaneously.
