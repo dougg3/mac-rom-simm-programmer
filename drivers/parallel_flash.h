@@ -55,6 +55,13 @@ typedef enum ParallelFlashChipType
 	ParallelFlash_M29F160FB5AN6E2_x4,
 } ParallelFlashChipType;
 
+/// Struct representing a group of identical erase sectors
+typedef struct ParallelFlashEraseSectorGroup
+{
+	uint32_t count;
+	uint32_t size;
+} ParallelFlashEraseSectorGroup;
+
 // Tells which type of flash chip we are communicating with
 void ParallelFlash_SetChipType(ParallelFlashChipType type);
 ParallelFlashChipType ParallelFlash_ChipType(void);
