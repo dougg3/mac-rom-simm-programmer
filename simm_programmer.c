@@ -30,6 +30,7 @@
 #include "led.h"
 #include "hardware.h"
 #include <stdbool.h>
+#include <string.h>
 
 /// Maximum size of an individual chip on a SIMM we read
 #define MAX_CHIP_SIZE				(2UL * 1024UL * 1024UL)
@@ -39,8 +40,18 @@
 #if ((READ_WRITE_CHUNK_SIZE_BYTES % 4) != 0)
 #error Read/write chunk size should be a multiple of 4 bytes
 #endif
-/// The smallest granularity for sector erase that we support
+/// The smallest granularity for sector erase that we support.
+/// Tehnically we could support more, but it's too complicated.
 #define ERASE_SECTOR_SIZE_BYTES		(256UL * 1024UL)
+
+/// The maximum number of erase groups we deal with
+#define MAX_ERASE_SECTOR_GROUPS				10
+
+/// The number of erase sector groups we know about currently.
+/// If it's zero, we don't know, so fall back to defaults.
+static uint8_t numEraseSectorGroups = 0;
+/// The erase sector groups that we will pass to the programmer
+static ParallelFlashEraseSectorGroup eraseSectorGroups[MAX_ERASE_SECTOR_GROUPS];
 
 /// Internal state so we know how to interpret the next-received byte
 typedef enum ProgrammerCommandState
@@ -53,6 +64,7 @@ typedef enum ProgrammerCommandState
 	ReadingChipsReadStartPos,    //!< Reading the start position for reading data from the SIMM
 	WritingChipsReadingStartPos, //!< Reading the start position for writing data to the SIMM
 	ReadingChipsMask,            //!< Reading the bitmask of which chips should be programmed
+	ReadingSectorLayout,         //!< Reading the erase sector layout
 } ProgrammerCommandState;
 static ProgrammerCommandState curCommandState = WaitingForCommand;
 
@@ -85,6 +97,7 @@ static void SIMMProgrammer_HandleErasePortionReadPosLengthByte(uint8_t byte);
 static void SIMMProgrammer_HandleReadingChipsReadStartPosByte(uint8_t byte);
 static void SIMMProgrammer_HandleWritingChipsReadingStartPosByte(uint8_t byte);
 static void SIMMProgrammer_HandleReadingChipsMaskByte(uint8_t byte);
+static void SIMMProgrammer_HandleReadingSectorLayoutByte(uint8_t byte);
 
 /** Initializes the SIMM programmer and prepares it for USB communication.
  *
@@ -132,6 +145,9 @@ void SIMMProgrammer_Check(void)
 			break;
 		case ReadingChipsMask:
 			SIMMProgrammer_HandleReadingChipsMaskByte(recvByte);
+			break;
+		case ReadingSectorLayout:
+			SIMMProgrammer_HandleReadingSectorLayoutByte(recvByte);
 			break;
 		}
 	}
@@ -263,6 +279,10 @@ static void SIMMProgrammer_HandleWaitingForCommandByte(uint8_t byte)
 		break;
 	case SetChipsMask:
 		curCommandState = ReadingChipsMask;
+		USBCDC_SendByte(CommandReplyOK);
+		break;
+	case SetSectorLayout:
+		curCommandState = ReadingSectorLayout;
 		USBCDC_SendByte(CommandReplyOK);
 		break;
 	// We don't know what this command is, so reply that it was invalid.
@@ -645,5 +665,59 @@ static void SIMMProgrammer_HandleReadingChipsMaskByte(uint8_t byte)
 	}
 
 	// Done either way; now we're waiting for a command to arrive
+	curCommandState = WaitingForCommand;
+}
+
+/** Handles a received byte when we are reading in the sector layout
+ *
+ * @param byte The received byte, which is the first sector layout byte
+ */
+static void SIMMProgrammer_HandleReadingSectorLayoutByte(uint8_t byte)
+{
+	numEraseSectorGroups = 0;
+
+	uint32_t sectorCount = byte;
+	uint32_t sectorSize = 0;
+	int byteIndex = 1;
+
+	while (1)
+	{
+		// Read in the sector size
+		for (int i = byteIndex; i < 4; i++)
+		{
+			uint32_t nextByte = (uint32_t)USBCDC_ReadByteBlocking();
+			sectorCount |= nextByte << (i * 8);
+		}
+		// From now on, we loop over 4 bytes, not 3
+		byteIndex = 0;
+
+		// If we read in a count of 0, we're done!
+		if (sectorCount == 0)
+		{
+			break;
+		}
+
+		// We have a nonzero count, so read in the size now
+		for (int i = 0; i < 4; i++)
+		{
+			uint32_t nextByte = (uint32_t)USBCDC_ReadByteBlocking();
+			sectorSize |= nextByte << (i * 8);
+		}
+
+		// If we have room to store it in the array, do it
+		if (numEraseSectorGroups < MAX_ERASE_SECTOR_GROUPS)
+		{
+			eraseSectorGroups[numEraseSectorGroups].count = sectorCount;
+			eraseSectorGroups[numEraseSectorGroups].size = sectorSize;
+			numEraseSectorGroups++;
+		}
+
+		// Now read in the next chunk of data
+		sectorCount = 0;
+		sectorSize = 0;
+	}
+
+	// We got the list. Done!
+	USBCDC_SendByte(CommandReplyOK);
 	curCommandState = WaitingForCommand;
 }
