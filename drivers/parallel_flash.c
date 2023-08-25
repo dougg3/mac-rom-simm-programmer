@@ -141,31 +141,111 @@ void ParallelFlash_EraseChips(uint8_t chipsMask)
  * @param address The start address to erase (must be aligned to a sector boundary)
  * @param length The number of bytes to erase (must be aligned to a sector boundary)
  * @param chipsMask The mask of which chips to erase
+ * @param numEraseSectorGroups The number of erase sector groups we know about
+ * @param eraseSectorGroups The erase sector groups
  * @return True on success, false on failure
  */
-bool ParallelFlash_EraseSectors(uint32_t address, uint32_t length, uint8_t chipsMask)
+bool ParallelFlash_EraseSectors(uint32_t address, uint32_t length, uint8_t chipsMask, uint8_t numEraseSectorGroups, ParallelFlashEraseSectorGroup const *eraseSectorGroups)
 {
-	bool result = false;
+	// Choose a default sector group if we don't have the info
+	static const ParallelFlashEraseSectorGroup defaultSST39SF040Sectors[] = {
+		{0xFFFFFFFFUL, SECTOR_SIZE_SST39SF040}
+	};
 
-	// Figure out our sector size
-	uint32_t sectorSize;
-	switch (curChipType)
+	static const ParallelFlashEraseSectorGroup defaultM29F160FBSectors[] = {
+		{1, 0x4000},
+		{2, 0x2000},
+		{1, 0x8000},
+		{0xFFFFFFFFUL, SECTOR_SIZE_M29F160FB5AN6E2_8}
+	};
+
+	// If we don't know the sector info (older programmer or unknown chips)
+	// then fall back to the previous hardcoded sector maps.
+	// Note that "chip type" isn't really accurate anymore; this is more about
+	// whether or not it has shifted unlock addresses. But these are the hardcoded
+	// defaults that seemed to work okay for people previously.
+	if (numEraseSectorGroups == 0)
 	{
-	case ParallelFlash_SST39SF040_x4:
-	default:
-		sectorSize = SECTOR_SIZE_SST39SF040;
-		break;
-	case ParallelFlash_M29F160FB5AN6E2_x4:
-		sectorSize = SECTOR_SIZE_M29F160FB5AN6E2_8;
-		break;
+		switch (curChipType)
+		{
+		case ParallelFlash_SST39SF040_x4:
+		default:
+			eraseSectorGroups = defaultSST39SF040Sectors;
+			numEraseSectorGroups = sizeof(defaultSST39SF040Sectors)/sizeof(defaultSST39SF040Sectors[0]);
+			break;
+		case ParallelFlash_M29F160FB5AN6E2_x4:
+			eraseSectorGroups = defaultM29F160FBSectors;
+			numEraseSectorGroups = sizeof(defaultM29F160FBSectors)/sizeof(defaultM29F160FBSectors[0]);
+			break;
+		}
 	}
 
-	// Make sure the area requested to be erased is on good boundaries
-	if ((address % sectorSize) ||
-		(length % sectorSize))
+	bool result = false;
+
+	// The first sector group and index in that group to erase
+	uint32_t firstSectorGroup = 0;
+	uint32_t firstSectorInGroup = 0;
+
+	// Temporary counters for matching up sector locations
+	uint32_t curSectorGroup = 0;
+	uint32_t curSectorInGroup = 0;
+
+	// Find the first sector we need to erase. Keep searching until we've
+	// 1) found it or gone past it, or
+	// 2) exhausted our list of erase sector groups
+	uint32_t curAddress = 0;
+	while (curAddress < address &&
+		   curSectorGroup < numEraseSectorGroups)
+	{
+		curAddress += eraseSectorGroups[curSectorGroup].size;
+		curSectorInGroup++;
+		if (curSectorInGroup >= eraseSectorGroups[curSectorGroup].count)
+		{
+			curSectorGroup++;
+			curSectorInGroup = 0;
+		}
+	}
+
+	// If the start address wasn't on a sector boundary, bail
+	if (curAddress != address)
 	{
 		return false;
 	}
+
+	// OK, we've found our first sector to erase.
+	firstSectorGroup = curSectorGroup;
+	firstSectorInGroup = curSectorInGroup;
+
+	// Now, locate our last sector to erase.
+	uint32_t curLength = 0;
+	while (curLength < length &&
+		   curSectorGroup < numEraseSectorGroups)
+	{
+		curLength += eraseSectorGroups[curSectorGroup].size;
+
+		// If we still haven't handled the entire requested space,
+		// go to the next sector
+		if (curLength < length)
+		{
+			curSectorInGroup++;
+			if (curSectorInGroup >= eraseSectorGroups[curSectorGroup].count)
+			{
+				curSectorGroup++;
+				curSectorInGroup = 0;
+			}
+		}
+	}
+
+	// If the length wasn't on a sector boundary, bail
+	if (curLength != length)
+	{
+		return false;
+	}
+
+	// We've now verified that everything is on a sector boundary, so we can
+	// go ahead with the erase operation!
+	curSectorGroup = firstSectorGroup;
+	curSectorInGroup = firstSectorInGroup;
 
 	// We're good to go. Let's do it. The process varies based on the chip type
 	if (curChipType == ParallelFlash_SST39SF040_x4)
@@ -184,8 +264,15 @@ bool ParallelFlash_EraseSectors(uint32_t address, uint32_t length, uint8_t chips
 			// unlock sequence has to be done again after this sector is done.
 			ParallelBus_WriteCycle(address, 0x30303030UL);
 
-			address += sectorSize;
-			length -= sectorSize;
+			// Move our counters in preparation for the next sector
+			address += eraseSectorGroups[curSectorGroup].size;
+			length -= eraseSectorGroups[curSectorGroup].size;
+			curSectorInGroup++;
+			if (curSectorInGroup >= eraseSectorGroups[curSectorGroup].count)
+			{
+				curSectorGroup++;
+				curSectorInGroup = 0;
+			}
 
 			// Wait for completion of this individual erase operation before
 			// we can start a new erase operation.
@@ -203,25 +290,19 @@ bool ParallelFlash_EraseSectors(uint32_t address, uint32_t length, uint8_t chips
 		ParallelBus_WriteCycle(ParallelFlash_UnlockAddress1(), 0x80808080UL);
 		ParallelFlash_UnlockChips(chipsMask);
 
-		// Now provide as many sector addresses as needed to erase.
-		// The first address is a bit of a special case because the boot sector
-		// actually has finer granularity for sector sizes.
-		if (address == 0)
-		{
-			ParallelBus_WriteCycle(0x00000000UL, 0x30303030UL);
-			ParallelBus_WriteCycle(0x00004000UL, 0x30303030UL);
-			ParallelBus_WriteCycle(0x00006000UL, 0x30303030UL);
-			ParallelBus_WriteCycle(0x00008000UL, 0x30303030UL);
-			address += sectorSize;
-			length -= sectorSize;
-		}
-
-		// The remaining sectors can use a more generic algorithm
 		while (length)
 		{
 			ParallelBus_WriteCycle(address, 0x30303030UL);
-			address += sectorSize;
-			length -= sectorSize;
+
+			// Move our counters in preparation for the next sector
+			address += eraseSectorGroups[curSectorGroup].size;
+			length -= eraseSectorGroups[curSectorGroup].size;
+			curSectorInGroup++;
+			if (curSectorInGroup >= eraseSectorGroups[curSectorGroup].count)
+			{
+				curSectorGroup++;
+				curSectorInGroup = 0;
+			}
 		}
 
 		// Wait for completion of the entire erase operation
@@ -231,7 +312,6 @@ bool ParallelFlash_EraseSectors(uint32_t address, uint32_t length, uint8_t chips
 	}
 
 	return result;
-
 }
 
 /** Writes a buffer of data to all 4 chips simultaneously

@@ -40,9 +40,6 @@
 #if ((READ_WRITE_CHUNK_SIZE_BYTES % 4) != 0)
 #error Read/write chunk size should be a multiple of 4 bytes
 #endif
-/// The smallest granularity for sector erase that we support.
-/// Tehnically we could support more, but it's too complicated.
-#define ERASE_SECTOR_SIZE_BYTES		(256UL * 1024UL)
 
 /// The maximum number of erase groups we deal with
 #define MAX_ERASE_SECTOR_GROUPS				10
@@ -544,44 +541,28 @@ static void SIMMProgrammer_HandleErasePortionReadPosLengthByte(uint8_t byte)
 
 	if (++readLengthByteIndex >= 8)
 	{
-		ParallelFlashChipType chipType = ParallelFlash_ChipType();
 		bool eraseSuccess = false;
 
-		// Ensure they are both within limits of sector size erasure
-		if (((erasePosition % ERASE_SECTOR_SIZE_BYTES) == 0) &&
-			((eraseLength % ERASE_SECTOR_SIZE_BYTES) == 0))
+		// Ensure the position and length are a multiple of 4 so that the division by 4
+		// won't confuse anything.
+		if (((erasePosition % 4) == 0) &&
+			((eraseLength % 4) == 0))
 		{
 			uint32_t boundary = eraseLength + erasePosition;
 
-			// Ensure they are within the limits of the chip size too
-			if (chipType == ParallelFlash_SST39SF040_x4)
+			// Ensure they are within the limits of our addressable length too.
+			// We can't address more than 8 MB of data at a time.
+			if (boundary <= (8 * 1024UL * 1024UL))
 			{
-				if (boundary <= (8 * 1024UL * 1024UL))
+				// OK! We're erasing certain sectors of a SIMM.
+				USBCDC_SendByte(ProgrammerErasePortionOK);
+				// Send the response immediately, it could take a while.
+				USBCDC_Flush();
+				if (ParallelFlash_EraseSectors(erasePosition/PARALLEL_FLASH_NUM_CHIPS,
+						eraseLength/PARALLEL_FLASH_NUM_CHIPS, chipsMask,
+						numEraseSectorGroups, eraseSectorGroups))
 				{
-					// OK! We're erasing certain sectors of a SIMM.
-					USBCDC_SendByte(ProgrammerErasePortionOK);
-					// Send the response immediately, it could take a while.
-					USBCDC_Flush();
-					if (ParallelFlash_EraseSectors(erasePosition/PARALLEL_FLASH_NUM_CHIPS,
-							eraseLength/PARALLEL_FLASH_NUM_CHIPS, chipsMask))
-					{
-						eraseSuccess = true;
-					}
-				}
-			}
-			else if (chipType == ParallelFlash_M29F160FB5AN6E2_x4)
-			{
-				if (boundary <= (8 * 1024UL * 1024UL))
-				{
-					// OK! We're erasing certain sectors of a SIMM.
-					USBCDC_SendByte(ProgrammerErasePortionOK);
-					// Send the response immediately, it could take a while.
-					USBCDC_Flush();
-					if (ParallelFlash_EraseSectors(erasePosition/PARALLEL_FLASH_NUM_CHIPS,
-							eraseLength/PARALLEL_FLASH_NUM_CHIPS, chipsMask))
-					{
-						eraseSuccess = true;
-					}
+					eraseSuccess = true;
 				}
 			}
 		}
