@@ -44,6 +44,11 @@
 /// The maximum number of erase groups we deal with
 #define MAX_ERASE_SECTOR_GROUPS				10
 
+/// Version info to respond with
+#define VERSION_MAJOR						1
+#define VERSION_MINOR						5
+#define VERSION_REVISION					0
+
 /// The number of erase sector groups we know about currently.
 /// If it's zero, we don't know, so fall back to defaults.
 static uint8_t numEraseSectorGroups = 0;
@@ -281,6 +286,14 @@ static void SIMMProgrammer_HandleWaitingForCommandByte(uint8_t byte)
 	case SetSectorLayout:
 		curCommandState = ReadingSectorLayout;
 		USBCDC_SendByte(CommandReplyOK);
+		break;
+	case GetFirmwareVersion:
+		USBCDC_SendByte(CommandReplyOK);
+		USBCDC_SendByte(VERSION_MAJOR);
+		USBCDC_SendByte(VERSION_MINOR);
+		USBCDC_SendByte(VERSION_REVISION);
+		USBCDC_SendByte(0);
+		USBCDC_SendByte(ProgrammerGetFWVersionDone);
 		break;
 	// We don't know what this command is, so reply that it was invalid.
 	default:

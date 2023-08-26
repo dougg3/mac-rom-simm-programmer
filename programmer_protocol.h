@@ -48,7 +48,8 @@ typedef enum ProgrammerCommand
     WriteChipsAt,
     ReadChipsAt,
 	SetChipsMask,
-	SetSectorLayout
+	SetSectorLayout,
+	GetFirmwareVersion
 } ProgrammerCommand;
 
 // After a command is sent, the programmer will always respond with
@@ -185,5 +186,16 @@ typedef enum ProgrammerErasePortionOfChipReply
 	ProgrammerErasePortionError,
 	ProgrammerErasePortionFinished
 } ProgrammerErasePortionOfChipReply;
+
+// -------------------------  GET FIRMWARE VERSION PROTOCOL  -------------------------
+// If the command is GetFirmwareVersion, the programmer will reply CommandReplyOK.
+// Next, it will return 4 bytes: major version, minor version, revision, and a final
+// byte where 0 means it's a normal version and 1 means it's a prerelease version.
+// Other values are reserved.
+// Finally, it will finish the response with ProgrammerGetFWVersionDone.
+typedef enum ProgrammerGetFWVersionReply
+{
+	ProgrammerGetFWVersionDone
+} ProgrammerGetFWVersionReply;
 
 #endif /* PROGRAMMER_PROTOCOL_H_ */
