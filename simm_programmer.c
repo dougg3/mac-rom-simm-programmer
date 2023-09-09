@@ -46,7 +46,7 @@
 /// Version info to respond with
 #define VERSION_MAJOR						1
 #define VERSION_MINOR						5
-#define VERSION_REVISION					0
+#define VERSION_REVISION					1
 
 /// The number of erase sector groups we know about currently.
 /// If it's zero, we don't know, so fall back to defaults.
