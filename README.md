@@ -1,6 +1,6 @@
 # Description
 
-This project is a bootloader and firmware for a Macintosh ROM SIMM programmer, along with control software for Mac OS X, Windows, and Linux. The ROM SIMM is compatible with the SE/30, all II-series Macs with a 64-pin SIMM socket (should include the IIx, IIcx, IIci, IIfx, and IIsi), and the Quadra 700.
+This project is a bootloader and firmware for a Macintosh ROM SIMM programmer, along with control software for Mac OS X, Windows, and Linux. The ROM SIMM is compatible with the SE/30, IIx, IIcx, IIci, IIfx, and IIsi.
 
 This particular repository contains the main firmware that runs on the programmer board. There are two variants of the firmware that are built from this source code:
 
